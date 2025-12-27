@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票详情</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .stock-code {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .red {
+            color: #dc3545;
+        }
+
+        .green {
+            color: #28a745;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 600px;
+            margin-bottom: 20px;
+        }
+
+        .chip-container {
+            width: 100%;
+            height: 500px;
+        }
+
+        .chip-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chip-date-tag {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chip-date-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .chip-date-tag .remove:hover {
+            color: #ff6b6b;
+        }
+
+        .chip-hint {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .expand-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            z-index: 10;
+        }
+
+        .expand-btn:hover {
+            background: #5568d3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            height: 90%;
+            padding: 30px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 10px;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-chip-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .modal-chip-chart {
+            flex: 1;
+            width: 100%;
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .date-filter label {
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .date-filter input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .date-filter button {
+            padding: 6px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .date-filter button:hover {
+            background: #5568d3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/stock_list.html" class="nav-link">← 返回列表</a>
+        <h1 id="stockName">加载中...</h1>
+        <div class="stock-code" id="stockCode"></div>
+
+        <div id="loading" class="loading">正在加载数据...</div>
+
+        <div id="content" style="display: none;">
+            <!-- 基本信息 -->
+            <div class="section">
+                <div class="section-title">📋 基本资料</div>
+                <div class="info-grid" id="basicInfo"></div>
+            </div>
+
+            <!-- 最新交易日信息 -->
+            <div class="section">
+                <div class="section-title">📊 最新交易日信息</div>
+                <div class="info-grid" id="latestInfo"></div>
+            </div>
+
+            <!-- K线图 -->
+            <div class="section">
+                <div class="section-title">📈 日K线图</div>
+                <div class="chart-container" id="klineChart"></div>
+            </div>
+
+            <!-- 指定交易日信息 -->
+            <div class="section">
+                <div class="section-title">📅 指定交易日信息 <span id="selectedDate" style="color: #667eea;"></span></div>
+                <div class="info-grid" id="dayInfo"></div>
+            </div>
+
+            <!-- 筹码分布对比 -->
+            <div class="section" style="position: relative;">
+                <button class="expand-btn" onclick="openChipModal()">🔍 放大查看</button>
+                <div class="section-title">🎯 筹码分布对比</div>
+                <div class="chip-hint">💡 点击K线图添加日期进行对比（最多5个），或点击标签移除</div>
+                <div class="chip-dates" id="chipDates"></div>
+                <div class="chip-container" id="chipChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筹码分布弹窗 -->
+    <div class="modal" id="chipModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🎯 筹码分布对比 - <span id="modalStockName"></span></div>
+                <span class="modal-close" onclick="closeChipModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="date-filter">
+                    <label>开始日期</label>
+                    <input type="text" id="modalStartDate" placeholder="20251201" maxlength="8">
+                    <label>结束日期</label>
+                    <input type="text" id="modalEndDate" placeholder="20251213" maxlength="8">
+                    <button onclick="loadChipDataByRange()">加载数据</button>
+                    <button onclick="clearAllChipDates()" style="background: #6c757d;">清空</button>
+                </div>
+                <div class="chip-hint">💡 输入日期范围加载筹码数据，或在主页面点击K线图添加日期</div>
+                <div class="modal-chip-dates" id="modalChipDates"></div>
+                <div class="modal-chip-chart" id="modalChipChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        const urlParams = new URLSearchParams(window.location.search);
+        const tsCode = urlParams.get('ts_code');
+        
+        let klineChartInstance = null;
+        let chipChartInstance = null;
+        let modalChipChartInstance = null; // 弹窗中的筹码图实例
+        let klineData = [];
+        let selectedChipDates = []; // 存储选中的日期
+        let chipDataCache = {}; // 缓存筹码数据
+
+        if (!tsCode) {
+            alert('缺少股票代码参数');
+            window.location.href = '/stock_list.html';
+        }
+
+        function openChipModal() {
+            document.getElementById('chipModal').classList.add('show');
+            document.getElementById('modalStockName').textContent = document.getElementById('stockName').textContent;
+            renderModalChipDates();
+            renderModalChipChart();
+        }
+
+        function closeChipModal() {
+            document.getElementById('chipModal').classList.remove('show');
+            if (modalChipChartInstance && !modalChipChartInstance.isDisposed()) {
+                modalChipChartInstance.dispose();
+                modalChipChartInstance = null;
+            }
+        }
+
+        function renderModalChipDates() {
+            const container = document.getElementById('modalChipDates');
+            if (selectedChipDates.length === 0) {
+                container.innerHTML = '<div style="color: #999; font-size: 13px;">暂无选择，请先在主页面点击K线图添加日期</div>';
+                return;
+            }
+            container.innerHTML = selectedChipDates.map(date => `
+                <div class="chip-date-tag">
+                    <span>${date}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderModalChipChart() {
+            const container = document.getElementById('modalChipChart');
+            
+            if (selectedChipDates.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无筹码数据</div>';
+                return;
+            }
+
+            if (modalChipChartInstance && !modalChipChartInstance.isDisposed()) {
+                modalChipChartInstance.dispose();
+            }
+            
+            container.innerHTML = '';
+            modalChipChartInstance = echarts.init(container);
+
+            const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
+            const series = [];
+            const legend = [];
+
+            selectedChipDates.forEach((date, index) => {
+                const chipData = chipDataCache[date];
+                if (chipData && chipData.prices && chipData.prices.length > 0) {
+                    legend.push(date);
+                    
+                    // 将价格和占比组合并按价格排序
+                    const dataPoints = chipData.prices.map((price, i) => ({
+                        price: price,
+                        percent: chipData.percents[i]
+                    })).sort((a, b) => a.price - b.price);
+                    
+                    series.push({
+                        name: date,
+                        type: 'line',
+                        data: dataPoints.map(d => [d.price, d.percent]),  // [价格, 占比]
+                        smooth: true,
+                        lineStyle: {
+                            width: 3,
+                            color: colors[index % colors.length]
+                        },
+                        itemStyle: {
+                            color: colors[index % colors.length]
+                        },
+                        areaStyle: {
+                            opacity: 0.15,
+                            color: colors[index % colors.length]
+                        }
+                    });
+                }
+            });
+
+            const option = {
+                title: {
+                    text: '筹码分布对比',
+                    left: 'center',
+                    top: 20,
+                    textStyle: {
+                        fontSize: 18,
+                        color: '#333'
+                    }
+                },
+                legend: {
+                    data: legend,
+                    top: 60,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        let result = '价格: ' + params[0].value[0].toFixed(2) + '<br/>';
+                        params.forEach(p => {
+                            result += p.marker + p.seriesName + ': ' + p.value[1].toFixed(2) + '%<br/>';
+                        });
+                        return result;
+                    }
+                },
+                grid: {
+                    left: '5%',
+                    right: '5%',
+                    top: '15%',
+                    bottom: '8%'
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '价格',
+                    nameTextStyle: {
+                        fontSize: 14
+                    },
+                    axisLabel: {
+                        formatter: '{value}',
+                        fontSize: 12
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '占比(%)',
+                    nameTextStyle: {
+                        fontSize: 14
+                    },
+                    axisLabel: {
+                        formatter: '{value}%',
+                        fontSize: 12
+                    }
+                },
+                brush: {
+                    toolbox: ['rect', 'clear'],
+                    xAxisIndex: 0,
+                    brushStyle: {
+                        borderWidth: 1,
+                        color: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: '#667eea'
+                    }
+                },
+                toolbox: {
+                    feature: {
+                        brush: {
+                            type: ['rect', 'clear']
+                        }
+                    }
+                },
+                series: series
+            };
+
+            modalChipChartInstance.setOption(option, true);
+            
+            // 监听区域选择事件
+            modalChipChartInstance.off('brushEnd');
+            modalChipChartInstance.on('brushEnd', function(params) {
+                const brushComponent = params.areas[0];
+                if (brushComponent && brushComponent.coordRange) {
+                    const priceRange = brushComponent.coordRange[0];
+                    const minPrice = Math.min(priceRange[0], priceRange[1]);
+                    const maxPrice = Math.max(priceRange[0], priceRange[1]);
+                    
+                    calculateChipInRange(minPrice, maxPrice);
+                }
+            });
+            
+            setTimeout(() => {
+                modalChipChartInstance.resize();
+            }, 100);
+        }
+
+        async function loadChipDataByRange() {
+            const startDate = document.getElementById('modalStartDate').value.trim();
+            const endDate = document.getElementById('modalEndDate').value.trim();
+            
+            if (!startDate || !endDate) {
+                alert('请输入开始日期和结束日期');
+                return;
+            }
+            
+            if (startDate.length !== 8 || endDate.length !== 8) {
+                alert('日期格式错误，请输入8位数字，如：20251201');
+                return;
+            }
+            
+            // 获取日期范围内的交易日
+            try {
+                const response = await fetch(`${API_BASE}/api/stocks/kline/${tsCode}?start_date=${startDate}&end_date=${endDate}`);
+                const data = await response.json();
+                
+                if (response.ok && data.data.length > 0) {
+                    // 清空现有选择
+                    selectedChipDates = [];
+                    
+                    // 最多取5个日期（均匀分布）
+                    const dates = data.data.map(d => d.trade_date);
+                    const step = Math.max(1, Math.floor(dates.length / 5));
+                    const selectedDates = [];
+                    
+                    for (let i = 0; i < dates.length && selectedDates.length < 5; i += step) {
+                        selectedDates.push(dates[i]);
+                    }
+                    
+                    // 确保包含最后一天
+                    if (selectedDates.length < 5 && !selectedDates.includes(dates[dates.length - 1])) {
+                        selectedDates.push(dates[dates.length - 1]);
+                    }
+                    
+                    // 加载每个日期的筹码数据
+                    for (const date of selectedDates) {
+                        await loadDayInfo(date);
+                        if (chipDataCache[date]) {
+                            selectedChipDates.push(date);
+                        }
+                    }
+                    
+                    // 更新显示
+                    renderChipDates();
+                    renderChipChart();
+                    renderModalChipDates();
+                    renderModalChipChart();
+                    
+                    alert(`成功加载 ${selectedChipDates.length} 个交易日的筹码数据`);
+                } else {
+                    alert('该日期范围内没有交易数据');
+                }
+            } catch (error) {
+                alert(`加载失败: ${error.message}`);
+            }
+        }
+
+        function clearAllChipDates() {
+            selectedChipDates = [];
+            renderChipDates();
+            renderChipChart();
+            renderModalChipDates();
+            renderModalChipChart();
+        }
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeChipModal();
+            }
+        });
+
+        if (!tsCode) {
+            alert('缺少股票代码参数');
+            window.location.href = '/stock_list.html';
+        }
+
+        async function loadStockDetail() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stocks/detail/${tsCode}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderBasicInfo(data);
+                    renderLatestInfo(data);
+                    await loadKlineData();
+                    renderChipDates(); // 初始化筹码日期显示
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                } else {
+                    alert(`加载失败: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`加载失败: ${error.message}`);
+            }
+        }
+
+        function renderBasicInfo(data) {
+            const basic = data.basic_info;
+            const holder = data.holder_info;
+
+            document.getElementById('stockName').textContent = basic.name;
+            document.getElementById('stockCode').textContent = basic.ts_code;
+
+            let html = `
+                <div class="info-item">
+                    <div class="info-label">上市日期</div>
+                    <div class="info-value">${basic.list_date || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">所属行业</div>
+                    <div class="info-value">${basic.industry || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">地域</div>
+                    <div class="info-value">${basic.area || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">市场类型</div>
+                    <div class="info-value">${basic.market || '-'}</div>
+                </div>
+            `;
+
+            if (holder) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">股东户数</div>
+                        <div class="info-value">${holder.holder_num || '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">股东户数占比(%)</div>
+                        <div class="info-value">${holder.holder_ratio !== null ? holder.holder_ratio.toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">统计截止日</div>
+                        <div class="info-value">${holder.end_date || '-'}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('basicInfo').innerHTML = html;
+        }
+
+        function renderLatestInfo(data) {
+            const daily = data.latest_daily;
+            const tech = data.latest_tech;
+            const money = data.latest_money_flow;
+
+            if (!daily) {
+                document.getElementById('latestInfo').innerHTML = '<div class="info-value">暂无最新交易数据</div>';
+                return;
+            }
+
+            const pctChgClass = daily.pct_chg > 0 ? 'red' : (daily.pct_chg < 0 ? 'green' : '');
+
+            let html = `
+                <div class="info-item">
+                    <div class="info-label">交易日期</div>
+                    <div class="info-value">${daily.trade_date}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">收盘价</div>
+                    <div class="info-value ${pctChgClass}">${daily.close !== null ? daily.close.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">涨跌幅(%)</div>
+                    <div class="info-value ${pctChgClass}">${daily.pct_chg !== null ? daily.pct_chg.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">涨跌额</div>
+                    <div class="info-value ${pctChgClass}">${daily.change !== null ? daily.change.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">开盘价</div>
+                    <div class="info-value">${daily.open !== null ? daily.open.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">最高价</div>
+                    <div class="info-value">${daily.high !== null ? daily.high.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">最低价</div>
+                    <div class="info-value">${daily.low !== null ? daily.low.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">成交量(手)</div>
+                    <div class="info-value">${daily.vol !== null ? (daily.vol / 100).toFixed(0) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">成交额(千元)</div>
+                    <div class="info-value">${daily.amount !== null ? daily.amount.toFixed(0) : '-'}</div>
+                </div>
+            `;
+
+            if (tech) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">换手率(%)</div>
+                        <div class="info-value">${tech.turnover_rate !== null ? tech.turnover_rate.toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">市盈率(PE)</div>
+                        <div class="info-value">${tech.pe !== null ? tech.pe.toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">市净率(PB)</div>
+                        <div class="info-value">${tech.pb !== null ? tech.pb.toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">总市值(亿)</div>
+                        <div class="info-value">${tech.total_mv !== null ? (tech.total_mv / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">流通市值(亿)</div>
+                        <div class="info-value">${tech.circ_mv !== null ? (tech.circ_mv / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                `;
+            }
+
+            if (money) {
+                const netMfClass = money.net_mf_amount > 0 ? 'red' : (money.net_mf_amount < 0 ? 'green' : '');
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">主力净流入(万)</div>
+                        <div class="info-value ${netMfClass}">${money.net_mf_amount !== null ? (money.net_mf_amount / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">超大单净流入(万)</div>
+                        <div class="info-value">${money.buy_elg_amount !== null && money.sell_elg_amount !== null ? ((money.buy_elg_amount - money.sell_elg_amount) / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">大单净流入(万)</div>
+                        <div class="info-value">${money.buy_lg_amount !== null && money.sell_lg_amount !== null ? ((money.buy_lg_amount - money.sell_lg_amount) / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('latestInfo').innerHTML = html;
+        }
+
+        async function loadKlineData() {
+            try {
+                const endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const startDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+                
+                const response = await fetch(`${API_BASE}/api/stocks/kline/${tsCode}?start_date=${startDate}&end_date=${endDate}`);
+                const data = await response.json();
+
+                if (response.ok && data.data.length > 0) {
+                    klineData = data.data;
+                    renderKlineChart(data.data);
+                    // 自动加载最新交易日信息并添加到筹码对比
+                    const latestDate = data.data[data.data.length - 1].trade_date;
+                    await loadDayInfo(latestDate);
+                    addChipDate(latestDate);
+                }
+            } catch (error) {
+                console.error('加载K线数据失败:', error);
+            }
+        }
+
+        function renderKlineChart(data) {
+            const dates = data.map(d => d.trade_date);
+            const klineValues = data.map(d => [d.open, d.close, d.low, d.high]);
+            const volumes = data.map(d => d.vol / 100);
+
+            klineChartInstance = echarts.init(document.getElementById('klineChart'));
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { 
+                        type: 'cross',
+                        link: [{ xAxisIndex: 'all' }]
+                    }
+                },
+                axisPointer: {
+                    link: [{ xAxisIndex: 'all' }]
+                },
+                grid: [
+                    { left: '3%', right: '3%', top: '8%', height: '55%' },
+                    { left: '3%', right: '3%', top: '68%', height: '20%' }
+                ],
+                xAxis: [
+                    { 
+                        type: 'category', 
+                        data: dates, 
+                        gridIndex: 0, 
+                        axisLabel: { show: false },
+                        axisLine: { lineStyle: { color: '#8392A5' } }
+                    },
+                    { 
+                        type: 'category', 
+                        data: dates, 
+                        gridIndex: 1,
+                        axisLine: { lineStyle: { color: '#8392A5' } }
+                    }
+                ],
+                yAxis: [
+                    { 
+                        scale: true, 
+                        gridIndex: 0, 
+                        splitLine: { show: true },
+                        axisLine: { lineStyle: { color: '#8392A5' } }
+                    },
+                    { 
+                        scale: true, 
+                        gridIndex: 1, 
+                        splitLine: { show: false },
+                        axisLine: { lineStyle: { color: '#8392A5' } }
+                    }
+                ],
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 1], start: 50, end: 100 },
+                    { show: true, xAxisIndex: [0, 1], type: 'slider', bottom: '0%', start: 50, end: 100, height: 20 }
+                ],
+                series: [
+                    {
+                        name: 'K线',
+                        type: 'candlestick',
+                        data: klineValues,
+                        itemStyle: {
+                            color: '#ef5350',
+                            color0: '#26a69a',
+                            borderColor: '#ef5350',
+                            borderColor0: '#26a69a'
+                        },
+                        xAxisIndex: 0,
+                        yAxisIndex: 0
+                    },
+                    {
+                        name: '成交量',
+                        type: 'bar',
+                        data: volumes,
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        itemStyle: {
+                            color: function(params) {
+                                const dataIndex = params.dataIndex;
+                                return klineValues[dataIndex][1] >= klineValues[dataIndex][0] ? '#ef5350' : '#26a69a';
+                            }
+                        }
+                    }
+                ]
+            };
+
+            klineChartInstance.setOption(option);
+            
+            // 强制调整图表大小以适应容器
+            setTimeout(() => {
+                klineChartInstance.resize();
+            }, 100);
+
+            // 使用zrender监听整个canvas的点击
+            klineChartInstance.getZr().on('click', async function(params) {
+                const pointInPixel = [params.offsetX, params.offsetY];
+                let dataIndex = null;
+                
+                // 尝试从K线区域获取索引
+                try {
+                    const pointInGrid = klineChartInstance.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+                    if (pointInGrid && pointInGrid[0] >= 0) {
+                        dataIndex = Math.round(pointInGrid[0]);
+                    }
+                } catch (e) {
+                    // 尝试从成交量区域获取索引
+                    try {
+                        const pointInGrid = klineChartInstance.convertFromPixel({ gridIndex: 1 }, pointInPixel);
+                        if (pointInGrid && pointInGrid[0] >= 0) {
+                            dataIndex = Math.round(pointInGrid[0]);
+                        }
+                    } catch (e2) {
+                        console.log('坐标转换失败');
+                    }
+                }
+                
+                if (dataIndex !== null && dataIndex >= 0 && dataIndex < dates.length) {
+                    const tradeDate = dates[dataIndex];
+                    await loadDayInfo(tradeDate);
+                    addChipDate(tradeDate);
+                }
+            });
+        }
+
+        async function loadDayInfo(tradeDate) {
+            try {
+                const response = await fetch(`${API_BASE}/api/stocks/day_info/${tsCode}/${tradeDate}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderDayInfo(data);
+                    // 缓存筹码数据
+                    if (data.chip) {
+                        chipDataCache[tradeDate] = data.chip;
+                    }
+                    document.getElementById('selectedDate').textContent = `(${tradeDate})`;
+                }
+            } catch (error) {
+                console.error('加载交易日信息失败:', error);
+            }
+        }
+
+        function addChipDate(tradeDate) {
+            // 检查数据是否存在
+            if (!chipDataCache[tradeDate]) {
+                console.log('筹码数据未加载:', tradeDate);
+                return;
+            }
+            
+            // 最多5个日期
+            if (selectedChipDates.length >= 5) {
+                selectedChipDates.shift();
+            }
+            // 避免重复
+            if (!selectedChipDates.includes(tradeDate)) {
+                selectedChipDates.push(tradeDate);
+                console.log('添加日期:', tradeDate, '当前列表:', selectedChipDates);
+                renderChipDates();
+                renderChipChart();
+            } else {
+                console.log('日期已存在:', tradeDate);
+            }
+        }
+
+        function removeChipDate(tradeDate) {
+            selectedChipDates = selectedChipDates.filter(d => d !== tradeDate);
+            renderChipDates();
+            renderChipChart();
+        }
+
+        function renderChipDates() {
+            const container = document.getElementById('chipDates');
+            if (selectedChipDates.length === 0) {
+                container.innerHTML = '<div style="color: #999; font-size: 13px;">暂无选择，请点击K线图添加日期</div>';
+                return;
+            }
+            container.innerHTML = selectedChipDates.map(date => `
+                <div class="chip-date-tag">
+                    <span>${date}</span>
+                    <span class="remove" onclick="removeChipDate('${date}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        function renderDayInfo(data) {
+            const daily = data.daily;
+            const tech = data.tech;
+            const money = data.money_flow;
+
+            if (!daily) {
+                document.getElementById('dayInfo').innerHTML = '<div class="info-value">暂无数据</div>';
+                return;
+            }
+
+            const pctChgClass = daily.pct_chg > 0 ? 'red' : (daily.pct_chg < 0 ? 'green' : '');
+
+            let html = `
+                <div class="info-item">
+                    <div class="info-label">收盘价</div>
+                    <div class="info-value ${pctChgClass}">${daily.close !== null ? daily.close.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">涨跌幅(%)</div>
+                    <div class="info-value ${pctChgClass}">${daily.pct_chg !== null ? daily.pct_chg.toFixed(2) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">成交量(手)</div>
+                    <div class="info-value">${daily.vol !== null ? (daily.vol / 100).toFixed(0) : '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">成交额(千元)</div>
+                    <div class="info-value">${daily.amount !== null ? daily.amount.toFixed(0) : '-'}</div>
+                </div>
+            `;
+
+            if (tech) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">换手率(%)</div>
+                        <div class="info-value">${tech.turnover_rate !== null ? tech.turnover_rate.toFixed(2) : '-'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">市盈率(PE)</div>
+                        <div class="info-value">${tech.pe !== null ? tech.pe.toFixed(2) : '-'}</div>
+                    </div>
+                `;
+            }
+
+            if (money) {
+                const netMfClass = money.net_mf_amount > 0 ? 'red' : (money.net_mf_amount < 0 ? 'green' : '');
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">主力净流入(万)</div>
+                        <div class="info-value ${netMfClass}">${money.net_mf_amount !== null ? (money.net_mf_amount / 10000).toFixed(2) : '-'}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('dayInfo').innerHTML = html;
+        }
+
+        function renderChipChart() {
+            console.log('渲染筹码图，选中日期:', selectedChipDates);
+            console.log('缓存数据:', Object.keys(chipDataCache));
+            
+            const container = document.getElementById('chipChart');
+            
+            if (selectedChipDates.length === 0) {
+                if (chipChartInstance && !chipChartInstance.isDisposed()) {
+                    chipChartInstance.dispose();
+                }
+                chipChartInstance = null;
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无筹码数据，请点击K线图添加日期</div>';
+                return;
+            }
+
+            // 清除innerHTML内容前先dispose
+            if (chipChartInstance && !chipChartInstance.isDisposed()) {
+                chipChartInstance.dispose();
+            }
+            
+            // 清空并重新初始化
+            container.innerHTML = '';
+            chipChartInstance = echarts.init(container);
+
+            const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
+            const series = [];
+            const legend = [];
+
+            // 为每个日期创建一条线
+            selectedChipDates.forEach((date, index) => {
+                const chipData = chipDataCache[date];
+                console.log('处理日期:', date, '数据:', chipData);
+                if (chipData && chipData.prices && chipData.prices.length > 0) {
+                    legend.push(date);
+                    
+                    // 将价格和占比组合并按价格排序
+                    const dataPoints = chipData.prices.map((price, i) => ({
+                        price: price,
+                        percent: chipData.percents[i]
+                    })).sort((a, b) => a.price - b.price);
+                    
+                    series.push({
+                        name: date,
+                        type: 'line',
+                        data: dataPoints.map(d => [d.price, d.percent]),  // [价格, 占比]
+                        smooth: true,
+                        lineStyle: {
+                            width: 2,
+                            color: colors[index % colors.length]
+                        },
+                        itemStyle: {
+                            color: colors[index % colors.length]
+                        },
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: colors[index % colors.length]
+                        }
+                    });
+                }
+            });
+
+            const option = {
+                title: {
+                    text: '筹码分布对比',
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 14,
+                        color: '#666'
+                    }
+                },
+                legend: {
+                    data: legend,
+                    top: 40,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        let result = '价格: ' + params[0].value[0].toFixed(2) + '<br/>';
+                        params.forEach(p => {
+                            result += p.marker + p.seriesName + ': ' + p.value[1].toFixed(2) + '%<br/>';
+                        });
+                        return result;
+                    }
+                },
+                grid: {
+                    left: '8%',
+                    right: '8%',
+                    top: '20%',
+                    bottom: '10%'
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '价格',
+                    axisLabel: {
+                        formatter: '{value}'
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '占比(%)',
+                    axisLabel: {
+                        formatter: '{value}%'
+                    }
+                },
+                brush: {
+                    toolbox: ['rect', 'clear'],
+                    xAxisIndex: 0,
+                    brushStyle: {
+                        borderWidth: 1,
+                        color: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: '#667eea'
+                    }
+                },
+                toolbox: {
+                    feature: {
+                        brush: {
+                            type: ['rect', 'clear']
+                        }
+                    }
+                },
+                series: series
+            };
+
+            chipChartInstance.setOption(option, true);
+            
+            // 监听区域选择事件
+            chipChartInstance.off('brushEnd');
+            chipChartInstance.on('brushEnd', function(params) {
+                const brushComponent = params.areas[0];
+                if (brushComponent && brushComponent.coordRange) {
+                    const priceRange = brushComponent.coordRange[0]; // X轴范围（价格）
+                    const minPrice = Math.min(priceRange[0], priceRange[1]);
+                    const maxPrice = Math.max(priceRange[0], priceRange[1]);
+                    
+                    calculateChipInRange(minPrice, maxPrice);
+                }
+            });
+            
+            // 强制调整图表大小
+            setTimeout(() => {
+                chipChartInstance.resize();
+            }, 100);
+        }
+
+        function calculateChipInRange(minPrice, maxPrice) {
+            const results = [];
+            
+            selectedChipDates.forEach(date => {
+                const chipData = chipDataCache[date];
+                if (chipData && chipData.prices && chipData.prices.length > 0) {
+                    let totalPercent = 0;
+                    
+                    chipData.prices.forEach((price, i) => {
+                        if (price >= minPrice && price <= maxPrice) {
+                            totalPercent += chipData.percents[i];
+                        }
+                    });
+                    
+                    results.push({
+                        date: date,
+                        percent: totalPercent.toFixed(2)
+                    });
+                }
+            });
+            
+            // 显示结果弹窗
+            showChipRangeResult(minPrice, maxPrice, results);
+        }
+
+        function showChipRangeResult(minPrice, maxPrice, results) {
+            const resultHtml = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                     background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+                     z-index: 10000; min-width: 400px;">
+                    <h3 style="margin: 0 0 20px 0; font-size: 18px; color: #333;">
+                        价格区间筹码统计
+                    </h3>
+                    <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 5px;">价格区间</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #333;">
+                            ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">日期</th>
+                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">筹码占比</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${results.map(r => `
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">${r.date}</td>
+                                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f0f0f0; 
+                                         font-weight: 600; color: #667eea;">${r.percent}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <button onclick="closeChipRangeResult()" 
+                            style="margin-top: 20px; width: 100%; padding: 10px; background: #667eea; 
+                                   color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        关闭
+                    </button>
+                </div>
+                <div onclick="closeChipRangeResult()" 
+                     style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                            background: rgba(0,0,0,0.5); z-index: 9999;" id="chipRangeOverlay"></div>
+            `;
+            
+            const container = document.createElement('div');
+            container.id = 'chipRangeResultContainer';
+            container.innerHTML = resultHtml;
+            document.body.appendChild(container);
+        }
+
+        function closeChipRangeResult() {
+            const container = document.getElementById('chipRangeResultContainer');
+            if (container) {
+                container.remove();
+            }
+        }
+
+        // 页面加载时执行
+        loadStockDetail();
+
+        // 窗口大小改变时重绘图表
+        window.addEventListener('resize', function() {
+            if (klineChartInstance) klineChartInstance.resize();
+            if (chipChartInstance) chipChartInstance.resize();
+        });
+    </script>
+</body>
+</html>

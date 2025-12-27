@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>概念股票筛选</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable:hover {
+            background: #f0f0f0;
+        }
+
+        .sort-icon {
+            font-size: 12px;
+            color: #999;
+            margin-left: 4px;
+        }
+
+        th.sortable.asc .sort-icon::after {
+            content: ' ↑';
+            color: #667eea;
+        }
+
+        th.sortable.desc .sort-icon::after {
+            content: ' ↓';
+            color: #667eea;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stock-code-link {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .stock-code-link:hover {
+            color: #764ba2;
+        }
+
+        .concepts-cell {
+            max-width: 600px;
+            word-wrap: break-word;
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">← 返回首页</a>
+        
+        <h1>📊 概念股票筛选</h1>
+
+        <div class="section">
+            <div class="section-title">筛选条件</div>
+            
+            <div class="form-group">
+                <label>基础概念（至少包含其中一个）</label>
+                <textarea id="baseConcepts" placeholder="每行一个概念，例如：&#10;商业航天&#10;卫星导航"></textarea>
+                <div class="hint">从这些概念的股票中进行筛选，如填写了股票名称则此项可留空</div>
+            </div>
+
+            <div class="form-group">
+                <label>必须包含的概念（同时包含所有，支持模糊匹配）</label>
+                <textarea id="filterConcepts" placeholder="每行一个关键词，例如：&#10;军工&#10;航天"></textarea>
+                <div class="hint">留空则不进行二次筛选，支持部分匹配（如"军工"可匹配"军工电子"）</div>
+            </div>
+
+            <div class="form-group">
+                <label>股票名称关键词（包含任一即可，支持模糊匹配）</label>
+                <textarea id="stockNames" placeholder="每行一个关键词，例如：&#10;航天&#10;卫星"></textarea>
+                <div class="hint">留空则不按名称筛选，支持部分匹配（如"航天"可匹配"航天发展"）</div>
+            </div>
+
+            <button class="btn btn-primary" onclick="filterStocks()">开始筛选</button>
+            <button class="btn btn-secondary" onclick="loadConceptList()">查看所有概念</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            正在筛选中，请稍候...
+        </div>
+
+        <div id="resultSection" class="section result-section">
+            <div class="section-title">筛选结果</div>
+            
+            <div class="result-stats">
+                <div class="stat-item">
+                    <div class="stat-label">符合条件股票</div>
+                    <div class="stat-value" id="totalStocks">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">基础概念</div>
+                    <div class="stat-value" id="baseConceptCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">筛选概念</div>
+                    <div class="stat-value" id="filterConceptCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">名称关键词</div>
+                    <div class="stat-value" id="stockNameCount">0</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>股票代码</th>
+                            <th class="sortable" onclick="sortTable('name')">股票名称 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_1d')">单日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_9d')">近9日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_10d')">近10日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_20d')">近20日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_29d')">近29日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('pct_30d')">近30日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th>所属概念</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="conceptListSection" class="section result-section">
+            <div class="section-title">所有概念列表</div>
+            <div id="conceptList" style="column-count: 4; column-gap: 20px; font-size: 14px; line-height: 2;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        let currentStocks = [];
+        let sortState = { column: null, direction: 'asc' };
+
+        async function filterStocks() {
+            const baseConcepts = document.getElementById('baseConcepts').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s);
+            
+            const filterConcepts = document.getElementById('filterConcepts').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s);
+
+            const stockNames = document.getElementById('stockNames').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s);
+
+            if (baseConcepts.length === 0 && stockNames.length === 0) {
+                alert('请至少输入一个基础概念或股票名称');
+                return;
+            }
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('conceptListSection').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/concept/filter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        base_concepts: baseConcepts,
+                        filter_concepts: filterConcepts,
+                        stock_names: stockNames
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    alert(`筛选失败: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`请求失败: ${error.message}`);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            currentStocks = data.stocks;
+            sortState = { column: null, direction: 'asc' };
+            
+            document.getElementById('totalStocks').textContent = data.total;
+            document.getElementById('baseConceptCount').textContent = data.params.base_concepts.length;
+            document.getElementById('filterConceptCount').textContent = data.params.filter_concepts.length;
+            document.getElementById('stockNameCount').textContent = data.params.stock_names.length;
+
+            renderTable();
+            document.getElementById('resultSection').classList.add('show');
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultBody');
+            tbody.innerHTML = currentStocks.map((stock, index) => {
+                const pct1d = stock.pct_1d !== null ? stock.pct_1d : '-';
+                const pct9d = stock.pct_9d !== null ? stock.pct_9d : '-';
+                const pct10d = stock.pct_10d !== null ? stock.pct_10d : '-';
+                const pct20d = stock.pct_20d !== null ? stock.pct_20d : '-';
+                const pct29d = stock.pct_29d !== null ? stock.pct_29d : '-';
+                const pct30d = stock.pct_30d !== null ? stock.pct_30d : '-';
+                const color1d = stock.pct_1d > 0 ? '#dc3545' : (stock.pct_1d < 0 ? '#28a745' : '#666');
+                const color9d = stock.pct_9d > 0 ? '#dc3545' : (stock.pct_9d < 0 ? '#28a745' : '#666');
+                const color10d = stock.pct_10d > 0 ? '#dc3545' : (stock.pct_10d < 0 ? '#28a745' : '#666');
+                const color20d = stock.pct_20d > 0 ? '#dc3545' : (stock.pct_20d < 0 ? '#28a745' : '#666');
+                const color29d = stock.pct_29d > 0 ? '#dc3545' : (stock.pct_29d < 0 ? '#28a745' : '#666');
+                const color30d = stock.pct_30d > 0 ? '#dc3545' : (stock.pct_30d < 0 ? '#28a745' : '#666');
+                
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="stock-code-link" onclick="window.open('/stock_detail.html?ts_code=${stock.ts_code}', '_blank')">${stock.ts_code}</span></td>
+                        <td>${stock.name}</td>
+                        <td style="color: ${color1d}; font-weight: 600;">${pct1d}${pct1d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${color9d}; font-weight: 600;">${pct9d}${pct9d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${color10d}; font-weight: 600;">${pct10d}${pct10d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${color20d}; font-weight: 600;">${pct20d}${pct20d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${color29d}; font-weight: 600;">${pct29d}${pct29d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${color30d}; font-weight: 600;">${pct30d}${pct30d !== '-' ? '%' : ''}</td>
+                        <td class="concepts-cell">${stock.concepts}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function sortTable(column) {
+            // Toggle direction if same column, otherwise reset to desc for numbers, asc for name
+            if (sortState.column === column) {
+                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.column = column;
+                sortState.direction = column === 'name' ? 'asc' : 'desc';
+            }
+
+            // Sort the data
+            currentStocks.sort((a, b) => {
+                let valA, valB;
+                
+                if (column === 'name') {
+                    valA = a.name;
+                    valB = b.name;
+                    return sortState.direction === 'asc' 
+                        ? valA.localeCompare(valB, 'zh-CN')
+                        : valB.localeCompare(valA, 'zh-CN');
+                } else {
+                    valA = a[column] !== null ? a[column] : -Infinity;
+                    valB = b[column] !== null ? b[column] : -Infinity;
+                    return sortState.direction === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+
+            // Update sort indicators
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('asc', 'desc');
+            });
+            event.target.closest('th').classList.add(sortState.direction);
+
+            renderTable();
+        }
+
+        async function loadConceptList() {
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('conceptListSection').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/concept/list`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const conceptList = document.getElementById('conceptList');
+                    conceptList.innerHTML = data.concepts.map(c => `<div>• ${c}</div>`).join('');
+                    document.getElementById('conceptListSection').classList.add('show');
+                } else {
+                    alert(`获取概念列表失败: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`请求失败: ${error.message}`);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

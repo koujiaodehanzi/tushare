@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tushare数据同步系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .header-nav {
+            margin-top: 20px;
+        }
+
+        .header-nav a {
+            display: inline-block;
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 0 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-nav a:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sync-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sync-section.daily-sync {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .sync-section.daily-sync .section-title {
+            grid-column: 1 / -1;
+        }
+
+        .section-title {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .sync-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .sync-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sync-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .result.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .status-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .status-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            font-size: 14px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sync-section.daily-sync {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Tushare数据同步系统</h1>
+            <p>股票数据采集与同步管理平台</p>
+            <div class="header-nav">
+                <a href="/stock_list.html">📈 股票列表</a>
+                <a href="/backtest.html">📊 策略回测</a>
+                <a href="/">🔄 数据同步</a>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- 左侧：基础数据同步 -->
+            <div class="sync-section">
+                <div class="section-title">📦 基础数据同步</div>
+                
+                <!-- 基础数据全量同步 -->
+                <div class="sync-card">
+                    <h3>🗂️ 全量同步</h3>
+                    <p style="color: #666; margin-bottom: 15px;">同步股票列表、股东持股、游资名录等基础数据</p>
+                    <button class="btn btn-primary" onclick="syncBase()">开始同步</button>
+                    <div id="result-base" class="result"></div>
+                </div>
+
+                <!-- 股票列表同步 -->
+                <div class="sync-card">
+                    <h3>📋 股票列表</h3>
+                    <p style="color: #666; margin-bottom: 15px;">同步所有股票基本信息</p>
+                    <button class="btn btn-primary" onclick="syncStockList()">开始同步</button>
+                    <div id="result-stock-list" class="result"></div>
+                </div>
+
+                <!-- 股东持股同步 -->
+                <div class="sync-card">
+                    <h3>👥 股东持股</h3>
+                    <p style="color: #666; margin-bottom: 15px;">同步最新股东持股数据</p>
+                    <button class="btn btn-primary" onclick="syncStockHolder()">开始同步</button>
+                    <div id="result-stock-holder" class="result"></div>
+                </div>
+
+                <!-- 游资名录同步 -->
+                <div class="sync-card">
+                    <h3>💰 游资名录</h3>
+                    <p style="color: #666; margin-bottom: 15px;">同步游资席位信息</p>
+                    <button class="btn btn-primary" onclick="syncHotMoney()">开始同步</button>
+                    <div id="result-hot-money" class="result"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：每日数据同步 -->
+            <div class="sync-section daily-sync">
+                <div class="section-title">📊 每日数据同步</div>
+                
+                <!-- 单日数据同步 -->
+                <div class="sync-card">
+                    <h3>📅 单日全量同步</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有，多个用逗号分隔）</label>
+                        <input type="text" id="daily_ts_code" placeholder="000001,000002">
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="trade_date" placeholder="20251212" maxlength="8">
+                        <div class="hint">格式：YYYYMMDD，如 20251212</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="syncDaily()">开始同步</button>
+                    <div id="result-daily" class="result"></div>
+                </div>
+
+                <!-- 日期范围同步 -->
+                <div class="sync-card">
+                    <h3>📆 范围全量同步</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有，多个用逗号分隔）</label>
+                        <input type="text" id="range_ts_code" placeholder="000001,000002">
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncRange()">开始同步</button>
+                    <div id="result-range" class="result"></div>
+                </div>
+
+                <!-- 日线行情 -->
+                <div class="sync-card">
+                    <h3>📈 日线行情</h3>
+                    <div class="form-group">
+                        <label>股票代码</label>
+                        <input type="text" id="daily_ts_code" placeholder="000001">
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="daily_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockDailySingle()">开始同步</button>
+                    <div id="result-stock-daily" class="result"></div>
+                </div>
+
+                <!-- 筹码分布 -->
+                <div class="sync-card">
+                    <h3>🎯 筹码分布</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有）</label>
+                        <input type="text" id="chip_ts_code" placeholder="000001">
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="chip_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="chip_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockChipSingle()">开始同步</button>
+                    <div id="result-stock-chip" class="result"></div>
+                </div>
+
+                <!-- 技术因子 -->
+                <div class="sync-card">
+                    <h3>📊 技术因子</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有）</label>
+                        <input type="text" id="tech_ts_code" placeholder="000001">
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="tech_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="tech_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockTechFactorSingle()">开始同步</button>
+                    <div id="result-stock-tech" class="result"></div>
+                </div>
+
+                <!-- 技术因子专业版 -->
+                <div class="sync-card">
+                    <h3>📊 技术因子(专业版)</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有）</label>
+                        <input type="text" id="tech_pro_ts_code" placeholder="000001">
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="tech_pro_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="tech_pro_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockTechFactorProSingle()">开始同步</button>
+                    <div id="result-stock-tech-pro" class="result"></div>
+                </div>
+
+                <!-- 同花顺个股资金流 -->
+                <div class="sync-card">
+                    <h3>💰 同花顺个股资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="money_ths_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="money_ths_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockMoneyFlowThs()">开始同步</button>
+                    <div id="result-stock-money-ths" class="result"></div>
+                </div>
+
+                <!-- 东方财富个股资金流 -->
+                <div class="sync-card">
+                    <h3>💰 东方财富个股资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="money_dc_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="money_dc_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockMoneyFlowDc()">开始同步</button>
+                    <div id="result-stock-money-dc" class="result"></div>
+                </div>
+
+                <!-- 板块资金流 -->
+                <div class="sync-card">
+                    <h3>📦 板块资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="block_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="block_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncBlockMoneyFlowSingle()">开始同步</button>
+                    <div id="result-block-money" class="result"></div>
+                </div>
+
+                <!-- 东方财富板块资金流 -->
+                <div class="sync-card">
+                    <h3>📦 东方财富板块资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="block_dc_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="block_dc_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncBlockDcMoneyFlow()">开始同步</button>
+                    <div id="result-block-dc-money" class="result"></div>
+                </div>
+
+                <!-- 行业资金流 -->
+                <div class="sync-card">
+                    <h3>🏭 行业资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="industry_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="industry_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncIndustryMoneyFlowSingle()">开始同步</button>
+                    <div id="result-industry-money" class="result"></div>
+                </div>
+
+                <!-- 东方财富行业资金流 -->
+                <div class="sync-card">
+                    <h3>🏭 东方财富行业资金流</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="industry_dc_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="industry_dc_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncIndustryDcMoneyFlow()">开始同步</button>
+                    <div id="result-industry-dc-money" class="result"></div>
+                </div>
+
+                <!-- 龙虎榜每日 -->
+                <div class="sync-card">
+                    <h3>🐉 龙虎榜每日</h3>
+                    <div class="form-group">
+                        <label>股票代码（可选）</label>
+                        <input type="text" id="lhb_ts_code" placeholder="000001">
+                        <div class="hint">留空则同步所有龙虎榜股票</div>
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="lhb_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockLhbDailySingle()">开始同步</button>
+                    <div id="result-lhb-daily" class="result"></div>
+                </div>
+
+                <!-- 龙虎榜机构 -->
+                <div class="sync-card">
+                    <h3>🏢 龙虎榜机构</h3>
+                    <div class="form-group">
+                        <label>股票代码（可选）</label>
+                        <input type="text" id="lhb_inst_ts_code" placeholder="000001">
+                        <div class="hint">留空则同步所有龙虎榜股票</div>
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="lhb_inst_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockLhbInstSingle()">开始同步</button>
+                    <div id="result-lhb-inst" class="result"></div>
+                </div>
+
+                <!-- 涨跌停数据 -->
+                <div class="sync-card">
+                    <h3>📈 涨跌停数据</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="limit_status_start_date" placeholder="20251201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="limit_status_end_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockLimitStatusSingle()">开始同步</button>
+                    <div id="result-limit-status" class="result"></div>
+                </div>
+
+                <!-- 连板天梯 -->
+                <div class="sync-card">
+                    <h3>🪜 连板天梯</h3>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="limit_ladder_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockLimitLadderSingle()">开始同步</button>
+                    <div id="result-limit-ladder" class="result"></div>
+                </div>
+
+                <!-- 强势板块 -->
+                <div class="sync-card">
+                    <h3>💪 强势板块</h3>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="block_strong_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncBlockLimitStrongSingle()">开始同步</button>
+                    <div id="result-block-strong" class="result"></div>
+                </div>
+
+                <!-- 游资每日明细 -->
+                <div class="sync-card">
+                    <h3>💰 游资每日明细</h3>
+                    <div class="form-group">
+                        <label>股票代码（留空则同步所有）</label>
+                        <input type="text" id="hm_daily_ts_code" placeholder="000001">
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期</label>
+                        <input type="text" id="hm_daily_trade_date" placeholder="20251212" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncStockHotMoneyDailySingle()">开始同步</button>
+                    <div id="result-hm-daily" class="result"></div>
+                </div>
+
+                <!-- 同花顺板块 -->
+                <div class="sync-card">
+                    <h3>📊 同花顺板块</h3>
+                    <div class="form-group">
+                        <label>板块代码（留空则全部）</label>
+                        <input type="text" id="ths_index_ts_code" placeholder="885800.TI">
+                    </div>
+                    <div class="form-group">
+                        <label>市场类型</label>
+                        <select id="ths_index_exchange">
+                            <option value="">全部</option>
+                            <option value="A">A股</option>
+                            <option value="HK">港股</option>
+                            <option value="US">美股</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>指数类型</label>
+                        <select id="ths_index_type">
+                            <option value="">全部</option>
+                            <option value="N">概念指数</option>
+                            <option value="I">行业指数</option>
+                            <option value="S">特色指数</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="syncThsIndex()">开始同步</button>
+                    <div id="result-ths-index" class="result"></div>
+                </div>
+
+                <!-- 东方财富板块 -->
+                <div class="sync-card">
+                    <h3>📊 东方财富板块</h3>
+                    <div class="form-group">
+                        <label>板块代码（留空则全部）</label>
+                        <input type="text" id="dc_index_ts_code" placeholder="BK1184.DC">
+                    </div>
+                    <div class="form-group">
+                        <label>板块名称（可选）</label>
+                        <input type="text" id="dc_index_name" placeholder="人形机器人">
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期（可选）</label>
+                        <input type="text" id="dc_index_trade_date" placeholder="20251219" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncDcIndex()">开始同步</button>
+                    <div id="result-dc-index" class="result"></div>
+                </div>
+
+                <!-- 同花顺板块成分 -->
+                <div class="sync-card">
+                    <h3>📋 同花顺板块成分</h3>
+                    <div class="form-group">
+                        <label>板块代码（留空则全部）</label>
+                        <input type="text" id="ths_member_ts_code" placeholder="885800.TI">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncThsMember()">开始同步</button>
+                    <div id="result-ths-member" class="result"></div>
+                </div>
+
+                <!-- 东方财富板块成分 -->
+                <div class="sync-card">
+                    <h3>📋 东方财富板块成分</h3>
+                    <div class="form-group">
+                        <label>板块代码（留空则全部）</label>
+                        <input type="text" id="dc_member_ts_code" placeholder="BK1184.DC">
+                    </div>
+                    <div class="form-group">
+                        <label>交易日期（可选）</label>
+                        <input type="text" id="dc_member_trade_date" placeholder="20251219" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncDcMember()">开始同步</button>
+                    <div id="result-dc-member" class="result"></div>
+                </div>
+
+                <!-- 同花顺板块行情 -->
+                <div class="sync-card">
+                    <h3>📈 同花顺板块行情</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="ths_daily_start_date" placeholder="20231201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="ths_daily_end_date" placeholder="20231231" maxlength="8">
+                    </div>
+                    <button class="btn btn-primary" onclick="syncThsDaily()">开始同步</button>
+                    <div id="result-ths-daily" class="result"></div>
+                </div>
+
+                <!-- 东方财富板块行情 -->
+                <div class="sync-card">
+                    <h3>📈 东方财富板块行情</h3>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="text" id="dc_daily_start_date" placeholder="20231201" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="text" id="dc_daily_end_date" placeholder="20231231" maxlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>板块类型（可选）</label>
+                        <select id="dc_daily_idx_type">
+                            <option value="">全部</option>
+                            <option value="概念板块">概念板块</option>
+                            <option value="行业板块">行业板块</option>
+                            <option value="地域板块">地域板块</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="syncDcDaily()">开始同步</button>
+                    <div id="result-dc-daily" class="result"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统状态 -->
+        <div class="status-panel">
+            <h3>🔍 系统状态</h3>
+            <div class="status-item">
+                <strong>API地址：</strong><span id="api-url">http://localhost:5001</span>
+            </div>
+            <div class="status-item">
+                <strong>连接状态：</strong><span id="connection-status">检查中...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+
+        // 检查API连接状态
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                document.getElementById('connection-status').innerHTML = 
+                    '<span style="color: #28a745;">✓ 已连接</span>';
+            } catch (error) {
+                document.getElementById('connection-status').innerHTML = 
+                    '<span style="color: #dc3545;">✗ 未连接</span>';
+            }
+        }
+
+        // 显示结果
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+
+        // 基础数据同步
+        async function syncBase() {
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-base', '正在同步基础数据...', 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/base`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('result-base', 
+                        `✓ 同步成功！股票列表: ${data.stock_list}条, 股东持股: ${data.stock_holder}条, 游资名录: ${data.stock_hot_money}条`, 
+                        'success');
+                } else {
+                    showResult('result-base', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-base', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 单日数据同步
+        async function syncDaily() {
+            const tsCode = document.getElementById('daily_ts_code').value.trim();
+            const tradeDate = document.getElementById('trade_date').value.trim();
+            if (!tradeDate || !/^\d{8}$/.test(tradeDate)) {
+                showResult('result-daily', '✗ 请输入正确的日期格式（YYYYMMDD）', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-daily', `正在同步 ${tradeDate} 的数据...`, 'loading');
+
+            try {
+                const body = { trade_date: tradeDate };
+                if (tsCode) body.ts_codes = tsCode;
+                
+                const response = await fetch(`${API_BASE}/api/sync/daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.skipped) {
+                        showResult('result-daily', `⚠ 日期 ${tradeDate} 已同步，跳过`, 'success');
+                    } else {
+                        const details = data.details || {};
+                        let msg = `✓ 同步成功！共 ${data.total_count} 条\n`;
+                        msg += `日线: ${details.stock_daily || 0}, 筹码: ${details.stock_chip || 0}, 技术因子: ${details.stock_tech_factor || 0}, 技术因子Pro: ${details.stock_tech_factor_pro || 0}\n`;
+                        msg += `资金流: ${details.stock_money_flow || 0}, THS资金: ${details.stock_money_flow_ths || 0}, DC资金: ${details.stock_money_flow_dc || 0}\n`;
+                        msg += `龙虎榜: ${details.stock_lhb_daily || 0}, 机构: ${details.stock_lhb_inst || 0}\n`;
+                        msg += `THS板块资金: ${details.block_ths_money_flow || 0}, THS行业资金: ${details.industry_ths_money_flow || 0}\n`;
+                        msg += `DC板块资金: ${details.block_dc_money_flow || 0}, DC行业资金: ${details.industry_dc_money_flow || 0}\n`;
+                        msg += `THS板块行情: ${details.ths_daily || 0}, DC板块行情: ${details.dc_daily || 0}\n`;
+                        msg += `涨停: ${details.stock_limit_status || 0}, 连板: ${details.stock_limit_ladder || 0}, 强势板块: ${details.block_limit_strong || 0}\n`;
+                        msg += `游资明细: ${details.stock_hot_money_daily || 0}`;
+                        showResult('result-daily', msg, 'success');
+                    }
+                } else {
+                    showResult('result-daily', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-daily', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 日期范围同步
+        async function syncRange() {
+            const tsCode = document.getElementById('range_ts_code').value.trim();
+            const startDate = document.getElementById('start_date').value.trim();
+            const endDate = document.getElementById('end_date').value.trim();
+            
+            if (!startDate || !/^\d{8}$/.test(startDate)) {
+                showResult('result-range', '✗ 请输入正确的开始日期格式（YYYYMMDD）', 'error');
+                return;
+            }
+            if (!endDate || !/^\d{8}$/.test(endDate)) {
+                showResult('result-range', '✗ 请输入正确的结束日期格式（YYYYMMDD）', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-range', `正在同步 ${startDate} 至 ${endDate} 的数据...`, 'loading');
+
+            try {
+                const body = { start_date: startDate, end_date: endDate };
+                if (tsCode) body.ts_codes = tsCode;
+                
+                const response = await fetch(`${API_BASE}/api/sync/daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const details = data.details || {};
+                    let msg = `✓ 同步成功！共 ${data.total_count} 条（${data.synced_dates || 0} 天）\n`;
+                    msg += `日线: ${details.stock_daily || 0}, 筹码: ${details.stock_chip || 0}, 技术因子: ${details.stock_tech_factor || 0}, 技术因子Pro: ${details.stock_tech_factor_pro || 0}\n`;
+                    msg += `资金流: ${details.stock_money_flow || 0}, THS资金: ${details.stock_money_flow_ths || 0}, DC资金: ${details.stock_money_flow_dc || 0}\n`;
+                    msg += `龙虎榜: ${details.stock_lhb_daily || 0}, 机构: ${details.stock_lhb_inst || 0}\n`;
+                    msg += `THS板块资金: ${details.block_ths_money_flow || 0}, THS行业资金: ${details.industry_ths_money_flow || 0}\n`;
+                    msg += `DC板块资金: ${details.block_dc_money_flow || 0}, DC行业资金: ${details.industry_dc_money_flow || 0}\n`;
+                    msg += `THS板块行情: ${details.ths_daily || 0}, DC板块行情: ${details.dc_daily || 0}\n`;
+                    msg += `涨停: ${details.stock_limit_status || 0}, 连板: ${details.stock_limit_ladder || 0}, 强势板块: ${details.block_limit_strong || 0}\n`;
+                    msg += `游资明细: ${details.stock_hot_money_daily || 0}`;
+                    showResult('result-range', msg, 'success');
+                } else {
+                    showResult('result-range', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-range', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 股票列表同步
+        async function syncStockList() {
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-list', '正在同步股票列表...', 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_list`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('result-stock-list', 
+                        `✓ 同步成功！共同步 ${data.count} 条股票数据`, 
+                        'success');
+                } else {
+                    showResult('result-stock-list', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-list', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 股东持股同步
+        async function syncStockHolder() {
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-holder', '正在同步股东持股数据...', 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_holder`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('result-stock-holder', 
+                        `✓ 同步成功！共同步 ${data.count} 条持股数据`, 
+                        'success');
+                } else {
+                    showResult('result-stock-holder', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-holder', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 游资名录同步
+        async function syncHotMoney() {
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-hot-money', '正在同步游资名录...', 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_hot_money`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('result-hot-money', 
+                        `✓ 同步成功！共同步 ${data.count} 条游资数据`, 
+                        'success');
+                } else {
+                    showResult('result-hot-money', `✗ 同步失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-hot-money', `✗ 请求失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 日线行情单独同步
+        async function syncStockDailySingle() {
+            const tsCode = document.getElementById('daily_ts_code').value.trim();
+            const tradeDate = document.getElementById('daily_trade_date').value.trim();
+            if (!tsCode || !tradeDate) {
+                showResult('result-stock-daily', '✗ 请输入股票代码和交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-daily', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ts_code: tsCode, trade_date: tradeDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-daily', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-stock-daily', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-daily', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 筹码分布单独同步
+        async function syncStockChipSingle() {
+            const tsCode = document.getElementById('chip_ts_code').value.trim();
+            const startDate = document.getElementById('chip_start_date').value.trim();
+            const endDate = document.getElementById('chip_end_date').value.trim();
+            
+            if (!startDate || !endDate) {
+                showResult('result-stock-chip', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-chip', '正在同步...', 'loading');
+            try {
+                const body = { start_date: startDate, end_date: endDate };
+                if (tsCode) body.ts_code = tsCode;
+                
+                const response = await fetch(`${API_BASE}/api/sync/stock_chip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-chip', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-stock-chip', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-chip', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 技术因子单独同步
+        async function syncStockTechFactorSingle() {
+            const tsCode = document.getElementById('tech_ts_code').value.trim();
+            const startDate = document.getElementById('tech_start_date').value.trim();
+            const endDate = document.getElementById('tech_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-stock-tech', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-tech', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_tech_factor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ts_code: tsCode || null, start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-tech', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-stock-tech', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-tech', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 技术因子专业版单独同步
+        async function syncStockTechFactorProSingle() {
+            const tsCode = document.getElementById('tech_pro_ts_code').value.trim();
+            const startDate = document.getElementById('tech_pro_start_date').value.trim();
+            const endDate = document.getElementById('tech_pro_end_date').value.trim();
+            
+            if (!startDate || !endDate) {
+                showResult('result-stock-tech-pro', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-tech-pro', '正在同步...', 'loading');
+            try {
+                const body = { start_date: startDate, end_date: endDate };
+                if (tsCode) body.ts_code = tsCode;
+                
+                const response = await fetch(`${API_BASE}/api/sync/stock_tech_factor_pro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-tech-pro', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-stock-tech-pro', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-tech-pro', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 同花顺个股资金流同步
+        async function syncStockMoneyFlowThs() {
+            const startDate = document.getElementById('money_ths_start_date').value.trim();
+            const endDate = document.getElementById('money_ths_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-stock-money-ths', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-money-ths', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_money_flow_ths`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-money-ths', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-stock-money-ths', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-money-ths', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富个股资金流同步
+        async function syncStockMoneyFlowDc() {
+            const startDate = document.getElementById('money_dc_start_date').value.trim();
+            const endDate = document.getElementById('money_dc_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-stock-money-dc', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-stock-money-dc', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_money_flow_dc`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-stock-money-dc', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-stock-money-dc', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-stock-money-dc', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富板块资金流同步
+        async function syncBlockDcMoneyFlow() {
+            const startDate = document.getElementById('block_dc_start_date').value.trim();
+            const endDate = document.getElementById('block_dc_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-block-dc-money', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-block-dc-money', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/block_dc_money_flow`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-block-dc-money', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-block-dc-money', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-block-dc-money', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富行业资金流同步
+        async function syncIndustryDcMoneyFlow() {
+            const startDate = document.getElementById('industry_dc_start_date').value.trim();
+            const endDate = document.getElementById('industry_dc_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-industry-dc-money', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-industry-dc-money', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/industry_dc_money_flow`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-industry-dc-money', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-industry-dc-money', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-industry-dc-money', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 板块资金流单独同步
+        async function syncBlockMoneyFlowSingle() {
+            const startDate = document.getElementById('block_start_date').value.trim();
+            const endDate = document.getElementById('block_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-block-money', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-block-money', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/block_ths_money_flow`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-block-money', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-block-money', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-block-money', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 行业资金流单独同步
+        async function syncIndustryMoneyFlowSingle() {
+            const startDate = document.getElementById('industry_start_date').value.trim();
+            const endDate = document.getElementById('industry_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-industry-money', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-industry-money', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/industry_ths_money_flow`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-industry-money', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-industry-money', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-industry-money', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 龙虎榜每日单独同步
+        async function syncStockLhbDailySingle() {
+            const tsCode = document.getElementById('lhb_ts_code').value.trim();
+            const tradeDate = document.getElementById('lhb_trade_date').value.trim();
+            if (!tradeDate) {
+                showResult('result-lhb-daily', '✗ 请输入交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-lhb-daily', '正在同步...', 'loading');
+            try {
+                const body = { trade_date: tradeDate };
+                if (tsCode) body.ts_code = tsCode;
+                const response = await fetch(`${API_BASE}/api/sync/stock_lhb_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-lhb-daily', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-lhb-daily', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-lhb-daily', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 龙虎榜机构单独同步
+        async function syncStockLhbInstSingle() {
+            const tsCode = document.getElementById('lhb_inst_ts_code').value.trim();
+            const tradeDate = document.getElementById('lhb_inst_trade_date').value.trim();
+            if (!tradeDate) {
+                showResult('result-lhb-inst', '✗ 请输入交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-lhb-inst', '正在同步...', 'loading');
+            try {
+                const body = { trade_date: tradeDate };
+                if (tsCode) body.ts_code = tsCode;
+                const response = await fetch(`${API_BASE}/api/sync/stock_lhb_inst`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-lhb-inst', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-lhb-inst', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-lhb-inst', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 涨跌停数据单独同步
+        async function syncStockLimitStatusSingle() {
+            const startDate = document.getElementById('limit_status_start_date').value.trim();
+            const endDate = document.getElementById('limit_status_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-limit-status', '✗ 请输入开始日期和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-limit-status', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_limit_status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-limit-status', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-limit-status', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-limit-status', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 连板天梯单独同步
+        async function syncStockLimitLadderSingle() {
+            const tradeDate = document.getElementById('limit_ladder_trade_date').value.trim();
+            if (!tradeDate) {
+                showResult('result-limit-ladder', '✗ 请输入交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-limit-ladder', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/stock_limit_ladder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trade_date: tradeDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-limit-ladder', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-limit-ladder', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-limit-ladder', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 强势板块单独同步
+        async function syncBlockLimitStrongSingle() {
+            const tradeDate = document.getElementById('block_strong_trade_date').value.trim();
+            if (!tradeDate) {
+                showResult('result-block-strong', '✗ 请输入交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-block-strong', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/block_limit_strong`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trade_date: tradeDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-block-strong', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-block-strong', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-block-strong', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 游资每日明细单独同步
+        async function syncStockHotMoneyDailySingle() {
+            const tsCode = document.getElementById('hm_daily_ts_code').value.trim();
+            const tradeDate = document.getElementById('hm_daily_trade_date').value.trim();
+            if (!tradeDate) {
+                showResult('result-hm-daily', '✗ 请输入交易日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-hm-daily', '正在同步...', 'loading');
+            try {
+                const body = { trade_date: tradeDate };
+                if (tsCode) body.ts_code = tsCode;
+                const response = await fetch(`${API_BASE}/api/sync/stock_hot_money_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-hm-daily', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-hm-daily', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-hm-daily', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 同花顺板块同步
+        async function syncThsIndex() {
+            const tsCode = document.getElementById('ths_index_ts_code').value.trim();
+            const exchange = document.getElementById('ths_index_exchange').value;
+            const type = document.getElementById('ths_index_type').value;
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-ths-index', '正在同步...', 'loading');
+            try {
+                const body = {};
+                if (tsCode) body.ts_code = tsCode;
+                if (exchange) body.exchange = exchange;
+                if (type) body.type = type;
+                const response = await fetch(`${API_BASE}/api/sync/ths_index`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-ths-index', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-ths-index', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-ths-index', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 同花顺板块成分同步
+        async function syncThsMember() {
+            const tsCode = document.getElementById('ths_member_ts_code').value.trim();
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-ths-member', '正在同步...', 'loading');
+            try {
+                const body = {};
+                if (tsCode) body.ts_code = tsCode;
+                const response = await fetch(`${API_BASE}/api/sync/ths_member`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-ths-member', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-ths-member', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-ths-member', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 同花顺板块行情同步
+        async function syncThsDaily() {
+            const startDate = document.getElementById('ths_daily_start_date').value.trim();
+            const endDate = document.getElementById('ths_daily_end_date').value.trim();
+            if (!startDate || !endDate) {
+                showResult('result-ths-daily', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-ths-daily', '正在同步...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/ths_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-ths-daily', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-ths-daily', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-ths-daily', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富板块同步
+        async function syncDcIndex() {
+            const tsCode = document.getElementById('dc_index_ts_code').value.trim();
+            const name = document.getElementById('dc_index_name').value.trim();
+            const tradeDate = document.getElementById('dc_index_trade_date').value.trim();
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-dc-index', '正在同步...', 'loading');
+            try {
+                const body = {};
+                if (tsCode) body.ts_code = tsCode;
+                if (name) body.name = name;
+                if (tradeDate) body.trade_date = tradeDate;
+                const response = await fetch(`${API_BASE}/api/sync/dc_index`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-dc-index', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-dc-index', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-dc-index', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富板块成分同步
+        async function syncDcMember() {
+            const tsCode = document.getElementById('dc_member_ts_code').value.trim();
+            const tradeDate = document.getElementById('dc_member_trade_date').value.trim();
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-dc-member', '正在同步...', 'loading');
+            try {
+                const body = {};
+                if (tsCode) body.ts_code = tsCode;
+                if (tradeDate) body.trade_date = tradeDate;
+                const response = await fetch(`${API_BASE}/api/sync/dc_member`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-dc-member', `✓ 同步成功！${data.count} 条`, 'success');
+                } else {
+                    showResult('result-dc-member', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-dc-member', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 东方财富板块行情同步
+        async function syncDcDaily() {
+            const startDate = document.getElementById('dc_daily_start_date').value.trim();
+            const endDate = document.getElementById('dc_daily_end_date').value.trim();
+            const idxType = document.getElementById('dc_daily_idx_type').value;
+            if (!startDate || !endDate) {
+                showResult('result-dc-daily', '✗ 请输入开始和结束日期', 'error');
+                return;
+            }
+            const btn = event.target;
+            btn.disabled = true;
+            showResult('result-dc-daily', '正在同步...', 'loading');
+            try {
+                const body = { start_date: startDate, end_date: endDate };
+                if (idxType) body.idx_type = idxType;
+                const response = await fetch(`${API_BASE}/api/sync/dc_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('result-dc-daily', `✓ 同步成功！${data.dates}个交易日，共${data.count}条`, 'success');
+                } else {
+                    showResult('result-dc-daily', `✗ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('result-dc-daily', `✗ ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 页面加载时检查连接
+        window.onload = function() {
+            checkHealth();
+            // 设置默认日期为昨天
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const dateStr = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
+            document.getElementById('trade_date').value = dateStr;
+        };
+    </script>
+</body>
+</html>

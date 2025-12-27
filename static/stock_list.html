@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票列表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .search-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .required::after {
+            content: '*';
+            color: red;
+            margin-left: 4px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .red {
+            color: #dc3545;
+        }
+
+        .green {
+            color: #28a745;
+        }
+
+        .white {
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pagination-controls button {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls span {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">← 返回首页</a>
+        <h1>📈 股票列表</h1>
+
+        <div class="search-panel">
+            <div class="search-grid">
+                <div class="form-group">
+                    <label class="required">交易日期</label>
+                    <input type="text" id="trade_date" placeholder="20251213" maxlength="8">
+                </div>
+                <div class="form-group">
+                    <label>股票代码</label>
+                    <input type="text" id="ts_code" placeholder="000001">
+                </div>
+                <div class="form-group">
+                    <label>股票名称</label>
+                    <input type="text" id="name" placeholder="平安银行">
+                </div>
+                <div class="form-group">
+                    <label>所属行业</label>
+                    <input type="text" id="industry" placeholder="银行">
+                </div>
+                <div class="form-group">
+                    <label>地域</label>
+                    <input type="text" id="area" placeholder="深圳">
+                </div>
+                <div class="form-group">
+                    <label>市场类型</label>
+                    <select id="market">
+                        <option value="">全部</option>
+                        <option value="主板">主板</option>
+                        <option value="创业板">创业板</option>
+                        <option value="科创板">科创板</option>
+                        <option value="北交所">北交所</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>涨跌幅最小值(%)</label>
+                    <input type="number" id="pct_chg_min" placeholder="-10" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>涨跌幅最大值(%)</label>
+                    <input type="number" id="pct_chg_max" placeholder="10" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>收盘价最小值</label>
+                    <input type="number" id="close_min" placeholder="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>收盘价最大值</label>
+                    <input type="number" id="close_max" placeholder="100" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>涨跌停状态</label>
+                    <select id="limit_status">
+                        <option value="正常">正常</option>
+                        <option value="U">涨停</option>
+                        <option value="D">跌停</option>
+                        <option value="Z">炸板</option>
+                    </select>
+                </div>
+            </div>
+            <div class="btn-actions">
+                <button class="btn btn-secondary" onclick="resetSearch()">重置</button>
+                <button class="btn btn-primary" onclick="searchStocks()">搜索</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            正在加载数据...
+        </div>
+
+        <div class="table-container">
+            <table id="stockTable">
+                <thead>
+                    <tr>
+                        <th>交易日期</th>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th>上市日期</th>
+                        <th>所属行业</th>
+                        <th>地域</th>
+                        <th>市场类型</th>
+                        <th>涨跌幅(%)</th>
+                        <th>开盘价</th>
+                        <th>收盘价</th>
+                        <th>成交量(手)</th>
+                        <th>成交额(千元)</th>
+                        <th>换手率(%)</th>
+                        <th>换手率(实)(%)</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                    <tr>
+                        <td colspan="14" style="text-align: center; padding: 40px; color: #999;">
+                            请输入交易日期并点击搜索
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none;">
+            <div class="pagination-info">
+                共 <span id="totalCount">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+            </div>
+            <div class="pagination-controls">
+                <button onclick="goToPage(1)">首页</button>
+                <button onclick="goToPage(currentPage - 1)">上一页</button>
+                <span>第 <input type="number" id="pageInput" min="1" style="width: 60px; text-align: center;"> 页</span>
+                <button onclick="goToPageInput()">跳转</button>
+                <button onclick="goToPage(currentPage + 1)">下一页</button>
+                <button onclick="goToPage(totalPages)">末页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        let currentPage = 1;
+        let totalPages = 1;
+        let pageSize = 20;
+
+        function resetSearch() {
+            document.getElementById('ts_code').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('industry').value = '';
+            document.getElementById('area').value = '';
+            document.getElementById('market').value = '';
+            document.getElementById('pct_chg_min').value = '';
+            document.getElementById('pct_chg_max').value = '';
+            document.getElementById('close_min').value = '';
+            document.getElementById('close_max').value = '';
+            document.getElementById('limit_status').value = '正常';
+        }
+
+        async function searchStocks(page = 1) {
+            const tradeDate = document.getElementById('trade_date').value.trim();
+            if (!tradeDate) {
+                alert('请输入交易日期');
+                return;
+            }
+
+            const params = {
+                trade_date: tradeDate,
+                ts_code: document.getElementById('ts_code').value.trim(),
+                name: document.getElementById('name').value.trim(),
+                industry: document.getElementById('industry').value.trim(),
+                area: document.getElementById('area').value.trim(),
+                market: document.getElementById('market').value,
+                pct_chg_min: document.getElementById('pct_chg_min').value ? parseFloat(document.getElementById('pct_chg_min').value) : null,
+                pct_chg_max: document.getElementById('pct_chg_max').value ? parseFloat(document.getElementById('pct_chg_max').value) : null,
+                close_min: document.getElementById('close_min').value ? parseFloat(document.getElementById('close_min').value) : null,
+                close_max: document.getElementById('close_max').value ? parseFloat(document.getElementById('close_max').value) : null,
+                limit_status: document.getElementById('limit_status').value === '正常' ? '' : document.getElementById('limit_status').value,
+                page: page,
+                page_size: pageSize
+            };
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('stockTable').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/stocks/list`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderTable(data.data);
+                    updatePagination(data.total, data.page);
+                    document.getElementById('stockTable').style.display = 'table';
+                    document.getElementById('pagination').style.display = 'flex';
+                } else {
+                    alert(`查询失败: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`查询失败: ${error.message}`);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('stockTableBody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 40px; color: #999;">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                const pctChgClass = row.pct_chg > 0 ? 'red' : (row.pct_chg < 0 ? 'green' : 'white');
+                return `
+                    <tr onclick="goToDetail('${row.ts_code}')">
+                        <td>${row.trade_date || '-'}</td>
+                        <td>${row.ts_code || '-'}</td>
+                        <td>${row.name || '-'}</td>
+                        <td>${row.list_date || '-'}</td>
+                        <td>${row.industry || '-'}</td>
+                        <td>${row.area || '-'}</td>
+                        <td>${row.market || '-'}</td>
+                        <td class="${pctChgClass}">${row.pct_chg !== null ? row.pct_chg.toFixed(2) : '-'}</td>
+                        <td class="${pctChgClass}">${row.open !== null ? row.open.toFixed(2) : '-'}</td>
+                        <td class="${pctChgClass}">${row.close !== null ? row.close.toFixed(2) : '-'}</td>
+                        <td>${row.vol !== null ? (row.vol / 100).toFixed(0) : '-'}</td>
+                        <td>${row.amount !== null ? row.amount.toFixed(0) : '-'}</td>
+                        <td>${row.turnover_rate !== null ? row.turnover_rate.toFixed(2) : '-'}</td>
+                        <td>${row.turnover_rate_f !== null ? row.turnover_rate_f.toFixed(2) : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updatePagination(total, page) {
+            currentPage = page;
+            totalPages = Math.ceil(total / pageSize);
+            
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            document.getElementById('pageInput').value = currentPage;
+            document.getElementById('pageInput').max = totalPages;
+        }
+
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            searchStocks(page);
+        }
+
+        function goToPageInput() {
+            const page = parseInt(document.getElementById('pageInput').value);
+            if (page >= 1 && page <= totalPages) {
+                goToPage(page);
+            }
+        }
+
+        function goToDetail(tsCode) {
+            window.open(`/stock_detail.html?ts_code=${tsCode}`, '_blank');
+        }
+
+        // 回车搜索
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStocks();
+            }
+        });
+    </script>
+</body>
+</html>

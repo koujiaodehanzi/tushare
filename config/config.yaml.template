@@ -1,0 +1,20 @@
+# Tushare股票数据采集系统配置文件模板
+# 复制此文件为 config.yaml 并填写实际配置
+
+database:
+  host: localhost          # 数据库主机地址
+  port: 3306              # 数据库端口
+  user: root              # 数据库用户名
+  password: "your_password_here"  # 数据库密码
+  database: stock         # 数据库名称
+  charset: utf8mb4        # 字符集
+
+tushare:
+  token: "your_tushare_token_here"  # Tushare Pro API Token（在 https://tushare.pro 获取）
+  api_limit: 120          # 每分钟最大API调用次数（根据你的积分等级调整）
+  retry_times: 3          # API调用失败重试次数
+  retry_delay: 1          # 重试间隔（秒）
+
+logging:
+  level: INFO             # 日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # 日志格式

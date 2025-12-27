@@ -1,0 +1,17 @@
+database:
+  host: localhost
+  port: 3306
+  user: root
+  password: "Jk98!po78&lm"
+  database: stock
+  charset: utf8mb4
+
+tushare:
+  token: "21c35e10dbac293e2535e61107b7777e83de449e088f6186fe888486"
+  api_limit: 200  # 每分钟最大调用次数
+  retry_times: 3  # 失败重试次数
+  retry_delay: 1  # 重试间隔（秒）
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
