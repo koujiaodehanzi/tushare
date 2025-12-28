@@ -16,3 +16,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_db_session():
+    """获取数据库会话"""
+    return SessionLocal()

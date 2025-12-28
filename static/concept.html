@@ -230,10 +230,272 @@
             word-wrap: break-word;
             font-size: 13px;
             color: #666;
+            position: relative;
+        }
+
+        /* 概念分析浮动面板 */
+        .concept-panel {
+            position: fixed;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 20px;
+            max-width: 600px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .concept-panel.show {
+            display: block;
+        }
+
+        .concept-panel-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.1));
+        }
+
+        .concept-panel-arrow.left {
+            left: -20px;
+            border-right-color: white;
+        }
+
+        .concept-panel-arrow.right {
+            right: -20px;
+            border-left-color: white;
+        }
+
+        .concept-panel-arrow.top {
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom-color: white;
+        }
+
+        .concept-panel-arrow.bottom {
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-top-color: white;
+        }
+
+        .concept-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            cursor: move;
+            user-select: none;
+        }
+
+        .concept-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .concept-panel-close {
+            cursor: pointer;
+            font-size: 20px;
+            color: #999;
+            line-height: 1;
+        }
+
+        .concept-panel-close:hover {
+            color: #333;
+        }
+
+        .concept-panel-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .concept-panel-btn {
+            margin-top: 15px;
+            padding: 10px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .concept-panel-btn:hover {
+            background: #5568d3;
+        }
+
+        .concept-panel-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .concept-analysis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .concept-analysis-table th,
+        .concept-analysis-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .concept-analysis-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .concept-analysis-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .relevance-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .relevance-bar-bg {
+            flex: 1;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .relevance-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .relevance-bar-text {
+            font-weight: 600;
+            min-width: 40px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        /* 批量处理进度弹窗 */
+        .batch-progress-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            padding: 30px;
+            min-width: 400px;
+            z-index: 2000;
+            display: none;
+        }
+
+        .batch-progress-modal.show {
+            display: block;
+        }
+
+        .batch-progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+        }
+
+        .batch-progress-overlay.show {
+            display: block;
+        }
+
+        .batch-progress-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .batch-progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .batch-progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .batch-progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
+    <!-- 批量处理进度弹窗 -->
+    <div class="batch-progress-overlay" id="batchProgressOverlay"></div>
+    <div class="batch-progress-modal" id="batchProgressModal">
+        <div class="batch-progress-title">批量获取概念分析</div>
+        <div class="batch-progress-bar">
+            <div class="batch-progress-bar-fill" id="batchProgressFill" style="width: 0%"></div>
+        </div>
+        <div class="batch-progress-text" id="batchProgressText">准备中...</div>
+    </div>
+
+    <!-- 概念分析浮动面板 -->
+    <div id="conceptPanel" class="concept-panel">
+        <div class="concept-panel-arrow left"></div>
+        <div class="concept-panel-header">
+            <div class="concept-panel-title" id="panelTitle">概念关联分析</div>
+            <div class="concept-panel-close" onclick="closeConceptPanel()">×</div>
+        </div>
+        <div id="panelContent"></div>
+    </div>
+
     <div class="container">
         <a href="/" class="nav-link">← 返回首页</a>
         
@@ -303,7 +565,11 @@
                             <th class="sortable" onclick="sortTable('pct_20d')">近20日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_29d')">近29日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_30d')">近30日涨幅 <span class="sort-icon">⇅</span></th>
-                            <th>所属概念</th>
+                            <th>
+                                所属概念
+                                <button class="concept-panel-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 8px;" onclick="event.stopPropagation(); batchGenerateAnalysis()">📊 批量获取</button>
+                                <button class="concept-panel-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 4px; background: #dc3545;" onclick="event.stopPropagation(); batchDeleteAnalysis()">🗑️ 清理数据</button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="resultBody">
@@ -322,6 +588,7 @@
         const API_BASE = 'http://localhost:5001';
         let currentStocks = [];
         let sortState = { column: null, direction: 'asc' };
+        let currentFilterParams = { base_concepts: [], filter_concepts: [] }; // 保存筛选参数
 
         async function filterStocks() {
             const baseConcepts = document.getElementById('baseConcepts').value
@@ -377,6 +644,12 @@
             currentStocks = data.stocks;
             sortState = { column: null, direction: 'asc' };
             
+            // 保存筛选参数
+            currentFilterParams = {
+                base_concepts: data.params.base_concepts || [],
+                filter_concepts: data.params.filter_concepts || []
+            };
+            
             document.getElementById('totalStocks').textContent = data.total;
             document.getElementById('baseConceptCount').textContent = data.params.base_concepts.length;
             document.getElementById('filterConceptCount').textContent = data.params.filter_concepts.length;
@@ -388,6 +661,25 @@
 
         function renderTable() {
             const tbody = document.getElementById('resultBody');
+            const thead = document.querySelector('#resultTable thead tr');
+            const hasBaseConcepts = currentFilterParams.base_concepts && currentFilterParams.base_concepts.length > 0;
+            
+            // 动态更新表头
+            const conceptsHeader = thead.querySelector('th:last-child');
+            const baseScoreHeader = thead.querySelector('.base-score-header');
+            
+            if (hasBaseConcepts && !baseScoreHeader) {
+                // 添加基础概念关联度列
+                const newHeader = document.createElement('th');
+                newHeader.className = 'sortable base-score-header';
+                newHeader.onclick = () => sortTable('base_concept_score');
+                newHeader.innerHTML = '基础概念关联度 <span class="sort-icon">⇅</span>';
+                conceptsHeader.parentNode.insertBefore(newHeader, conceptsHeader);
+            } else if (!hasBaseConcepts && baseScoreHeader) {
+                // 移除基础概念关联度列
+                baseScoreHeader.remove();
+            }
+            
             tbody.innerHTML = currentStocks.map((stock, index) => {
                 const pct1d = stock.pct_1d !== null ? stock.pct_1d : '-';
                 const pct9d = stock.pct_9d !== null ? stock.pct_9d : '-';
@@ -402,6 +694,11 @@
                 const color29d = stock.pct_29d > 0 ? '#dc3545' : (stock.pct_29d < 0 ? '#28a745' : '#666');
                 const color30d = stock.pct_30d > 0 ? '#dc3545' : (stock.pct_30d < 0 ? '#28a745' : '#666');
                 
+                // 基础概念关联度
+                const baseScore = stock.base_concept_score !== null && stock.base_concept_score !== undefined ? stock.base_concept_score : '-';
+                const baseScoreColor = stock.base_concept_score >= 70 ? '#28a745' : (stock.base_concept_score >= 50 ? '#ffc107' : '#dc3545');
+                const baseScoreCell = hasBaseConcepts ? `<td style="color: ${baseScoreColor}; font-weight: 600;">${baseScore}${baseScore !== '-' ? '分' : ''}</td>` : '';
+                
                 return `
                     <tr>
                         <td>${index + 1}</td>
@@ -413,7 +710,8 @@
                         <td style="color: ${color20d}; font-weight: 600;">${pct20d}${pct20d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color29d}; font-weight: 600;">${pct29d}${pct29d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color30d}; font-weight: 600;">${pct30d}${pct30d !== '-' ? '%' : ''}</td>
-                        <td class="concepts-cell">${stock.concepts}</td>
+                        ${baseScoreCell}
+                        <td class="concepts-cell" onclick="showConceptAnalysis(event, '${stock.ts_code}', '${stock.name}', '${stock.concepts}')" style="cursor: pointer; color: #667eea;">${stock.concepts}</td>
                     </tr>
                 `;
             }).join('');
@@ -475,6 +773,444 @@
             } finally {
                 document.getElementById('loadingSection').style.display = 'none';
             }
+        }
+
+        // 概念分析相关函数
+        let currentAnalysisStock = null;
+
+        function showConceptAnalysis(event, tsCode, stockName, conceptsStr) {
+            event.stopPropagation();
+            
+            currentAnalysisStock = {
+                ts_code: tsCode,
+                stock_name: stockName,
+                concepts: conceptsStr.split(', ')
+            };
+
+            const panel = document.getElementById('conceptPanel');
+            const arrow = panel.querySelector('.concept-panel-arrow');
+            const rect = event.target.getBoundingClientRect();
+            
+            // 重置箭头类名
+            arrow.className = 'concept-panel-arrow';
+            
+            // 计算面板位置，确保不超出屏幕
+            let left = rect.right + 20;
+            let top = rect.top;
+            let arrowDirection = 'left';
+            let arrowTop = rect.top + rect.height / 2;
+            
+            // 如果右侧空间不够，显示在左侧
+            if (left + 600 > window.innerWidth) {
+                left = rect.left - 620;
+                arrowDirection = 'right';
+                
+                // 如果左侧也不够，居中显示
+                if (left < 0) {
+                    left = (window.innerWidth - 600) / 2;
+                    top = rect.bottom + 20;
+                    arrowDirection = 'top';
+                    arrowTop = null;
+                }
+            }
+            
+            // 如果下方空间不够，向上调整
+            if (top + 500 > window.innerHeight) {
+                top = Math.max(20, window.innerHeight - 520);
+            }
+            
+            panel.style.left = left + 'px';
+            panel.style.top = top + 'px';
+            
+            // 设置箭头方向和位置
+            arrow.classList.add(arrowDirection);
+            if (arrowTop !== null && (arrowDirection === 'left' || arrowDirection === 'right')) {
+                arrow.style.top = (arrowTop - top) + 'px';
+            } else {
+                arrow.style.top = '';
+            }
+            
+            // 显示面板
+            panel.classList.add('show');
+            document.getElementById('panelTitle').textContent = `${stockName} - 概念关联分析`;
+            
+            // 加载数据
+            loadConceptAnalysis(tsCode);
+        }
+
+        function closeConceptPanel() {
+            document.getElementById('conceptPanel').classList.remove('show');
+            currentAnalysisStock = null;
+        }
+
+        async function loadConceptAnalysis(tsCode) {
+            const content = document.getElementById('panelContent');
+            content.innerHTML = '<div class="loading-spinner">加载中...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/concept/analysis?ts_code=${tsCode}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    if (result.has_data) {
+                        renderAnalysisTable(result.data);
+                    } else {
+                        renderEmptyState();
+                    }
+                } else {
+                    content.innerHTML = `<div class="concept-panel-empty">加载失败: ${result.error}</div>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="concept-panel-empty">请求失败: ${error.message}</div>`;
+            }
+        }
+
+        function renderEmptyState() {
+            const content = document.getElementById('panelContent');
+            content.innerHTML = `
+                <div class="concept-panel-empty">
+                    <div>暂无概念分析数据</div>
+                    <button class="concept-panel-btn" onclick="event.stopPropagation(); generateAnalysis()">获取数据</button>
+                </div>
+            `;
+        }
+
+        function renderAnalysisTable(data) {
+            const content = document.getElementById('panelContent');
+            
+            // 如果有筛选参数，对数据进行排序
+            let sortedData = [...data];
+            if (currentFilterParams.base_concepts.length > 0 || currentFilterParams.filter_concepts.length > 0) {
+                const priorityConcepts = [...currentFilterParams.base_concepts, ...currentFilterParams.filter_concepts];
+                
+                sortedData.sort((a, b) => {
+                    const aIsPriority = priorityConcepts.includes(a.concept);
+                    const bIsPriority = priorityConcepts.includes(b.concept);
+                    
+                    if (aIsPriority && !bIsPriority) return -1;
+                    if (!aIsPriority && bIsPriority) return 1;
+                    
+                    // 都是优先或都不是优先，按关联度排序
+                    return b.score - a.score;
+                });
+            }
+            
+            const rows = sortedData.map(item => {
+                const color = item.score >= 70 ? '#28a745' : (item.score >= 50 ? '#ffc107' : '#dc3545');
+                return `
+                    <tr>
+                        <td>${item.concept}</td>
+                        <td>
+                            <div class="relevance-bar">
+                                <div class="relevance-bar-bg">
+                                    <div class="relevance-bar-fill" style="width: ${item.score}%; background: ${color};"></div>
+                                </div>
+                                <div class="relevance-bar-text" style="color: ${color};">${item.score}%</div>
+                            </div>
+                        </td>
+                        <td>${item.description}</td>
+                        <td>${item.evidence}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            content.innerHTML = `
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <button class="concept-panel-btn" style="padding: 6px 12px; font-size: 12px; background: #ffc107;" onclick="event.stopPropagation(); refreshAnalysis()">🔄 重新获取</button>
+                </div>
+                <table class="concept-analysis-table">
+                    <thead>
+                        <tr>
+                            <th>概念</th>
+                            <th style="width: 150px;">关联度</th>
+                            <th>关联性说明</th>
+                            <th>具体事项</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function generateAnalysis() {
+            if (!currentAnalysisStock) return;
+            
+            const content = document.getElementById('panelContent');
+            
+            // 显示详细的加载状态
+            content.innerHTML = `
+                <div class="loading-spinner">
+                    <div style="font-size: 16px; margin-bottom: 10px;">🤖 正在调用大模型分析...</div>
+                    <div style="font-size: 14px; color: #999;">
+                        <div>• 分析股票: ${currentAnalysisStock.stock_name}</div>
+                        <div>• 概念数量: ${currentAnalysisStock.concepts.length} 个</div>
+                        <div>• 预计耗时: 10-30秒</div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/concept/analysis`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(currentAnalysisStock)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    renderAnalysisTable(result.data);
+                } else {
+                    content.innerHTML = `
+                        <div class="concept-panel-empty">
+                            <div style="color: #dc3545; margin-bottom: 10px;">❌ 生成失败</div>
+                            <div style="font-size: 13px; color: #666;">${result.error}</div>
+                            <button class="concept-panel-btn" onclick="event.stopPropagation(); generateAnalysis()">重试</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="concept-panel-empty">
+                        <div style="color: #dc3545; margin-bottom: 10px;">❌ 请求失败</div>
+                        <div style="font-size: 13px; color: #666;">${error.message}</div>
+                        <button class="concept-panel-btn" onclick="event.stopPropagation(); generateAnalysis()">重试</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 点击外部关闭面板
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('conceptPanel');
+            if (panel.classList.contains('show') && !panel.contains(event.target)) {
+                const conceptsCells = document.querySelectorAll('.concepts-cell');
+                let clickedConceptCell = false;
+                conceptsCells.forEach(cell => {
+                    if (cell.contains(event.target)) {
+                        clickedConceptCell = true;
+                    }
+                });
+                if (!clickedConceptCell) {
+                    closeConceptPanel();
+                }
+            }
+        });
+
+        async function refreshAnalysis() {
+            if (!currentAnalysisStock) return;
+            
+            if (!confirm('确定要删除现有数据并重新获取吗？')) {
+                return;
+            }
+            
+            const content = document.getElementById('panelContent');
+            content.innerHTML = '<div class="loading-spinner">正在删除旧数据...</div>';
+            
+            try {
+                // 删除旧数据
+                const deleteResponse = await fetch(`${API_BASE}/api/concept/analysis?ts_code=${currentAnalysisStock.ts_code}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!deleteResponse.ok) {
+                    throw new Error('删除数据失败');
+                }
+                
+                // 重新生成
+                await generateAnalysis();
+                
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="concept-panel-empty">
+                        <div style="color: #dc3545; margin-bottom: 10px;">❌ 刷新失败</div>
+                        <div style="font-size: 13px; color: #666;">${error.message}</div>
+                        <button class="concept-panel-btn" onclick="event.stopPropagation(); refreshAnalysis()">重试</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 弹窗拖动功能
+        let isDragging = false;
+        let dragStartX, dragStartY, panelStartX, panelStartY;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const panel = document.getElementById('conceptPanel');
+            const header = panel.querySelector('.concept-panel-header');
+
+            header.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('concept-panel-close')) return;
+                
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                panelStartX = parseInt(panel.style.left) || 0;
+                panelStartY = parseInt(panel.style.top) || 0;
+                
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                
+                panel.style.left = (panelStartX + deltaX) + 'px';
+                panel.style.top = (panelStartY + deltaY) + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                document.body.style.userSelect = '';
+            });
+        });
+
+        // 批量获取所有股票的概念分析
+        async function batchGenerateAnalysis() {
+            if (!currentStocks || currentStocks.length === 0) {
+                alert('请先筛选股票');
+                return;
+            }
+
+            if (!confirm(`确定要为 ${currentStocks.length} 只股票批量获取概念分析吗？\n这可能需要较长时间。`)) {
+                return;
+            }
+
+            const modal = document.getElementById('batchProgressModal');
+            const overlay = document.getElementById('batchProgressOverlay');
+            const fill = document.getElementById('batchProgressFill');
+            const text = document.getElementById('batchProgressText');
+
+            modal.classList.add('show');
+            overlay.classList.add('show');
+
+            const total = currentStocks.length;
+            let completed = 0;
+            let success = 0;
+            let failed = 0;
+            let skipped = 0;
+
+            // 串行处理（逐个处理），每次请求间隔3秒
+            for (let i = 0; i < total; i++) {
+                const stock = currentStocks[i];
+                
+                try {
+                    // 先检查是否已有数据
+                    const checkResponse = await fetch(`${API_BASE}/api/concept/analysis?ts_code=${stock.ts_code}`);
+                    const checkResult = await checkResponse.json();
+                    
+                    if (checkResult.has_data) {
+                        // 已有数据，跳过
+                        skipped++;
+                    } else {
+                        // 没有数据，调用生成
+                        const response = await fetch(`${API_BASE}/api/concept/analysis`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                ts_code: stock.ts_code,
+                                stock_name: stock.name,
+                                concepts: stock.concepts.split(', ')
+                            })
+                        });
+
+                        if (response.ok) {
+                            success++;
+                        } else {
+                            failed++;
+                        }
+                        
+                        // 成功或失败后都等待3秒，避免请求过快
+                        if (i < total - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                        }
+                    }
+                } catch (error) {
+                    failed++;
+                } finally {
+                    completed++;
+                    const progress = Math.round((completed / total) * 100);
+                    fill.style.width = progress + '%';
+                    text.textContent = `进度: ${completed}/${total} (成功: ${success}, 跳过: ${skipped}, 失败: ${failed})`;
+                }
+            }
+
+            text.textContent = `完成! 总计: ${total}, 成功: ${success}, 跳过: ${skipped}, 失败: ${failed}`;
+            
+            setTimeout(() => {
+                modal.classList.remove('show');
+                overlay.classList.remove('show');
+                alert(`批量处理完成!\n成功: ${success}\n跳过(已有数据): ${skipped}\n失败: ${failed}`);
+            }, 2000);
+        }
+
+        // 批量删除所有股票的概念分析数据
+        async function batchDeleteAnalysis() {
+            if (!currentStocks || currentStocks.length === 0) {
+                alert('请先筛选股票');
+                return;
+            }
+
+            if (!confirm(`确定要删除 ${currentStocks.length} 只股票的概念分析数据吗？\n此操作不可恢复！`)) {
+                return;
+            }
+
+            const modal = document.getElementById('batchProgressModal');
+            const overlay = document.getElementById('batchProgressOverlay');
+            const fill = document.getElementById('batchProgressFill');
+            const text = document.getElementById('batchProgressText');
+
+            modal.classList.add('show');
+            overlay.classList.add('show');
+
+            const total = currentStocks.length;
+            let completed = 0;
+            let success = 0;
+            let failed = 0;
+            const concurrency = 5; // 删除操作可以更快
+
+            // 分批处理
+            for (let i = 0; i < total; i += concurrency) {
+                const batch = currentStocks.slice(i, Math.min(i + concurrency, total));
+                
+                await Promise.all(batch.map(async (stock) => {
+                    try {
+                        const response = await fetch(`${API_BASE}/api/concept/analysis?ts_code=${stock.ts_code}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            success++;
+                        } else {
+                            failed++;
+                        }
+                    } catch (error) {
+                        failed++;
+                    } finally {
+                        completed++;
+                        const progress = Math.round((completed / total) * 100);
+                        fill.style.width = progress + '%';
+                        text.textContent = `删除进度: ${completed}/${total} (成功: ${success}, 失败: ${failed})`;
+                    }
+                }));
+            }
+
+            text.textContent = `删除完成! 总计: ${total}, 成功: ${success}, 失败: ${failed}`;
+            
+            setTimeout(() => {
+                modal.classList.remove('show');
+                overlay.classList.remove('show');
+                alert(`批量删除完成!\n成功: ${success}\n失败: ${failed}`);
+            }, 2000);
         }
     </script>
 </body>

@@ -1,0 +1,67 @@
+# LLM配置模板
+# 复制此文件为 llm_config.yaml 并填写实际的API密钥
+
+llm:
+  # 当前使用的提供商: doubao, openai, qwen等
+  provider: doubao
+  
+  # 豆包配置
+  doubao:
+    api_key: "your_doubao_api_key_here"  # 替换为你的豆包API Key
+    endpoint: "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+    model: "ep-20241227-xxxxx"  # 替换为你的endpoint ID
+    timeout: 30
+  
+  # OpenAI配置（示例，暂未实现）
+  # openai:
+  #   api_key: "your_openai_api_key"
+  #   endpoint: "https://api.openai.com/v1/chat/completions"
+  #   model: "gpt-4"
+  #   timeout: 30
+  
+  # 通义千问配置（示例，暂未实现）
+  # qwen:
+  #   api_key: "your_qwen_api_key"
+  #   endpoint: "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
+  #   model: "qwen-max"
+  #   timeout: 30
+
+# Prompt模板配置
+prompts:
+  stock_concept_analysis:
+    system_prompt: |
+      你是一个专业的A股市场分析师，精通上市公司业务和行业概念。
+      你的任务是分析股票与概念的关联性，给出客观、准确的评估。
+      
+      评分标准：
+      - 90-100分：核心主营业务，直接相关
+      - 70-89分：重要业务板块，强相关
+      - 50-69分：有业务涉及，中等相关
+      - 30-49分：边缘业务或间接相关
+      - 0-29分：概念炒作，弱相关或无关
+      
+      要求：
+      1. 评分要客观，基于公司实际业务
+      2. 说明要简洁，突出关键点
+      3. 佐证要具体，可以是业务、产品、项目、公告等
+    
+    user_prompt_template: |
+      请分析股票【{stock_name}({ts_code})】与以下概念的关联性：
+      
+      概念列表：
+      {concepts}
+      
+      请对每个概念进行分析，一定要从与该公司的运营业务来分析，锚定具体的项目、订单等情况。返回JSON数组格式（不要包含markdown代码块标记）：
+      [
+        {{
+          "concept": "概念名称",
+          "score": 85,
+          "description": "关联性说明（50字以内）",
+          "evidence": "具体事项（可包含业务、产品、项目等），需要真实存在的信息。内容尽量精炼简短"
+        }}
+      ]
+      
+      注意：
+      1. 只返回JSON数组，不要其他内容
+      2. 所有概念都要分析，不要遗漏
+      3. 评分要合理，不要都给高分或低分

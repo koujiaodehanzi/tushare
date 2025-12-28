@@ -15,6 +15,7 @@ from .stock_money_flow_ths import StockMoneyFlowThs
 from .stock_money_flow_dc import StockMoneyFlowDc
 from .block_dc_money_flow import BlockDcMoneyFlow
 from .industry_dc_money_flow import IndustryDcMoneyFlow
+from .stock_concept_analysis import StockConceptAnalysis
 from .remaining_models import (
     StockMoneyFlow,
     BlockThsMoneyFlow,

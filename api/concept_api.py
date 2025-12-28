@@ -199,6 +199,36 @@ def filter_stocks_by_concept():
             
             logger.info(f"筛选完成，共{len(result_stocks)}只股票")
             
+            # 如果有基础概念，查询基础概念的关联度
+            base_concept_scores = {}
+            if base_concepts and filtered_stock_codes:
+                from models import StockConceptAnalysis
+                
+                # 查询所有股票对基础概念的关联度
+                concept_analysis = db.query(
+                    StockConceptAnalysis.ts_code,
+                    StockConceptAnalysis.concept_name,
+                    StockConceptAnalysis.relevance_score
+                ).filter(
+                    StockConceptAnalysis.ts_code.in_(filtered_stock_codes),
+                    StockConceptAnalysis.concept_name.in_(base_concepts)
+                ).all()
+                
+                # 按股票代码分组，计算平均关联度
+                for ts_code, concept_name, score in concept_analysis:
+                    if ts_code not in base_concept_scores:
+                        base_concept_scores[ts_code] = []
+                    base_concept_scores[ts_code].append(score)
+                
+                # 计算每只股票的平均关联度
+                for ts_code in base_concept_scores:
+                    scores = base_concept_scores[ts_code]
+                    base_concept_scores[ts_code] = round(sum(scores) / len(scores), 1) if scores else None
+            
+            # 添加基础概念关联度到结果
+            for stock in result_stocks:
+                stock['base_concept_score'] = base_concept_scores.get(stock['ts_code'])
+            
             return jsonify({
                 'stocks': result_stocks,
                 'total': len(result_stocks),
@@ -243,4 +273,103 @@ def get_concept_list():
             
     except Exception as e:
         logger.error(f"获取概念列表失败: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@concept_bp.route('/api/concept/analysis', methods=['GET'])
+def get_concept_analysis():
+    """获取股票概念分析数据"""
+    try:
+        ts_code = request.args.get('ts_code')
+        if not ts_code:
+            return jsonify({'error': '缺少ts_code参数'}), 400
+        
+        from services.concept_analysis_service import ConceptAnalysisService
+        service = ConceptAnalysisService()
+        result = service.get_analysis(ts_code)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"获取概念分析失败: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@concept_bp.route('/api/concept/analysis', methods=['POST'])
+def generate_concept_analysis():
+    """生成股票概念分析"""
+    try:
+        data = request.get_json() or {}
+        ts_code = data.get('ts_code')
+        stock_name = data.get('stock_name')
+        concepts = data.get('concepts', [])
+        
+        if not ts_code or not stock_name or not concepts:
+            return jsonify({'error': '缺少必需参数: ts_code, stock_name, concepts'}), 400
+        
+        from services.concept_analysis_service import ConceptAnalysisService
+        service = ConceptAnalysisService()
+        
+        # 生成分析
+        analysis_data = service.generate_analysis(ts_code, stock_name, concepts)
+        
+        return jsonify({
+            'success': True,
+            'data': analysis_data,
+            'total': len(analysis_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"生成概念分析失败: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@concept_bp.route('/api/config/prompt', methods=['GET'])
+def get_prompt_config():
+    """获取prompt配置"""
+    try:
+        from services.concept_analysis_service import ConceptAnalysisService
+        service = ConceptAnalysisService()
+        config = service.get_prompt_config()
+        
+        return jsonify(config)
+        
+    except Exception as e:
+        logger.error(f"获取prompt配置失败: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@concept_bp.route('/api/config/prompt', methods=['PUT'])
+def update_prompt_config():
+    """更新prompt配置"""
+    try:
+        data = request.get_json() or {}
+        system_prompt = data.get('system_prompt')
+        user_prompt_template = data.get('user_prompt_template')
+        
+        if not system_prompt or not user_prompt_template:
+            return jsonify({'error': '缺少必需参数'}), 400
+        
+        from services.concept_analysis_service import ConceptAnalysisService
+        service = ConceptAnalysisService()
+        service.update_prompt_config(system_prompt, user_prompt_template)
+        
+        return jsonify({'success': True, 'message': 'Prompt配置已更新'})
+        
+    except Exception as e:
+        logger.error(f"更新prompt配置失败: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@concept_bp.route('/api/concept/analysis', methods=['DELETE'])
+def delete_concept_analysis():
+    """删除股票概念分析数据"""
+    try:
+        ts_code = request.args.get('ts_code')
+        if not ts_code:
+            return jsonify({'error': '缺少ts_code参数'}), 400
+        
+        from services.concept_analysis_service import ConceptAnalysisService
+        service = ConceptAnalysisService()
+        service.delete_analysis(ts_code)
+        
+        return jsonify({'success': True, 'message': '数据已删除'})
+        
+    except Exception as e:
+        logger.error(f"删除概念分析失败: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
