@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from utils.db import SessionLocal
 from utils.logger import get_logger
-from models import ThsIndustryAndBlock, ThsIndustryAndBlockDetail, StockDaily
+from models import ThsIndustryAndBlock, ThsIndustryAndBlockDetail, StockDaily, StockList
 from sqlalchemy import and_, or_
 
 logger = get_logger(__name__)
@@ -24,13 +24,18 @@ def filter_stocks_by_concept():
         
         db = SessionLocal()
         try:
-            # 1. 获取基础概念下的所有股票
+            # 1. 获取基础概念下的所有股票（模糊匹配）
             if base_concepts:
+                # 构建模糊匹配条件
+                concept_filters = []
+                for concept in base_concepts:
+                    concept_filters.append(ThsIndustryAndBlock.name.like(f'%{concept}%'))
+                
                 base_stock_codes = db.query(ThsIndustryAndBlockDetail.con_code).distinct().join(
                     ThsIndustryAndBlock,
                     ThsIndustryAndBlockDetail.ts_code == ThsIndustryAndBlock.ts_code
                 ).filter(
-                    ThsIndustryAndBlock.name.in_(base_concepts)
+                    or_(*concept_filters)
                 ).all()
                 
                 stock_codes = [code[0] for code in base_stock_codes]
@@ -118,8 +123,15 @@ def filter_stocks_by_concept():
                     })
                     filtered_stock_codes.append(stock_code)
             
-            # 5. 批量获取所有股票的日线数据，计算涨幅
+            # 5. 批量获取所有股票的日线数据和市场信息
             if filtered_stock_codes:
+                # 获取股票市场信息
+                stock_list_data = db.query(StockList).filter(
+                    StockList.ts_code.in_(filtered_stock_codes)
+                ).all()
+                
+                market_dict = {s.ts_code: s.market for s in stock_list_data}
+                
                 all_daily_data = db.query(StockDaily).filter(
                     StockDaily.ts_code.in_(filtered_stock_codes)
                 ).order_by(StockDaily.ts_code, StockDaily.trade_date.desc()).all()
@@ -135,6 +147,15 @@ def filter_stocks_by_concept():
                 for stock in result_stocks:
                     ts_code = stock['ts_code']
                     daily_list = daily_dict.get(ts_code, [])
+                    market = market_dict.get(ts_code)
+                    
+                    stock['market'] = market
+                    
+                    # 获取最新股价
+                    if len(daily_list) >= 1:
+                        stock['latest_price'] = daily_list[0].close
+                    else:
+                        stock['latest_price'] = None
                     
                     # 计算单日涨幅（最近交易日）
                     if len(daily_list) >= 1:
@@ -196,6 +217,31 @@ def filter_stocks_by_concept():
                             stock['pct_30d'] = None
                     else:
                         stock['pct_30d'] = None
+                    
+                    # 计算异动阈值（主板、科创板、创业板）
+                    if market in ['主板', '科创板', '创业板']:
+                        # 10日异动阈值
+                        if stock['pct_9d'] is not None:
+                            if stock['pct_9d'] >= 100:
+                                stock['alert_10d'] = 'triggered'
+                            else:
+                                threshold = ((2 / (1 + stock['pct_9d']/100)) - 1) * 100
+                                stock['alert_10d'] = round(threshold, 2)
+                        else:
+                            stock['alert_10d'] = None
+                        
+                        # 30日异动阈值
+                        if stock['pct_29d'] is not None:
+                            if stock['pct_29d'] >= 200:
+                                stock['alert_30d'] = 'triggered'
+                            else:
+                                threshold = ((3 / (1 + stock['pct_29d']/100)) - 1) * 100
+                                stock['alert_30d'] = round(threshold, 2)
+                        else:
+                            stock['alert_30d'] = None
+                    else:
+                        stock['alert_10d'] = None
+                        stock['alert_30d'] = None
             
             logger.info(f"筛选完成，共{len(result_stocks)}只股票")
             

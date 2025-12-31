@@ -559,14 +559,20 @@
                             <th>序号</th>
                             <th>股票代码</th>
                             <th class="sortable" onclick="sortTable('name')">股票名称 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('market')">板块 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('latest_price')">最新价 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_1d')">单日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_9d')">近9日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_10d')">近10日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('alert_10d')">10日异动阈值 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_20d')">近20日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_29d')">近29日涨幅 <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortTable('pct_30d')">近30日涨幅 <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortTable('alert_30d')">30日异动阈值 <span class="sort-icon">⇅</span></th>
                             <th>
                                 所属概念
+                                <input type="text" id="conceptFilter" placeholder="筛选概念..." style="width: 120px; padding: 4px 8px; margin-left: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;" oninput="filterByConcept(this.value)">
+                                <button class="concept-panel-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 4px;" onclick="event.stopPropagation(); clearConceptFilter()">✖ 清除</button>
                                 <button class="concept-panel-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 8px;" onclick="event.stopPropagation(); batchGenerateAnalysis()">📊 批量获取</button>
                                 <button class="concept-panel-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 4px; background: #dc3545;" onclick="event.stopPropagation(); batchDeleteAnalysis()">🗑️ 清理数据</button>
                             </th>
@@ -587,6 +593,7 @@
     <script>
         const API_BASE = 'http://localhost:5001';
         let currentStocks = [];
+        let allStocks = []; // 保存所有股票数据，用于概念筛选
         let sortState = { column: null, direction: 'asc' };
         let currentFilterParams = { base_concepts: [], filter_concepts: [] }; // 保存筛选参数
 
@@ -641,6 +648,7 @@
         }
 
         function displayResults(data) {
+            allStocks = data.stocks; // 保存所有数据
             currentStocks = data.stocks;
             sortState = { column: null, direction: 'asc' };
             
@@ -649,6 +657,9 @@
                 base_concepts: data.params.base_concepts || [],
                 filter_concepts: data.params.filter_concepts || []
             };
+            
+            // 清空概念筛选输入框
+            document.getElementById('conceptFilter').value = '';
             
             document.getElementById('totalStocks').textContent = data.total;
             document.getElementById('baseConceptCount').textContent = data.params.base_concepts.length;
@@ -694,6 +705,60 @@
                 const color29d = stock.pct_29d > 0 ? '#dc3545' : (stock.pct_29d < 0 ? '#28a745' : '#666');
                 const color30d = stock.pct_30d > 0 ? '#dc3545' : (stock.pct_30d < 0 ? '#28a745' : '#666');
                 
+                // 10日异动阈值
+                let alert10d = '-';
+                let alert10dColor = '#666';
+                if (stock.market !== '主板' && stock.market !== '科创板' && stock.market !== '创业板') {
+                    alert10d = 'N/A';
+                    alert10dColor = '#999';
+                } else if (stock.alert_10d === 'triggered') {
+                    alert10d = '已触发';
+                    alert10dColor = '#dc3545';
+                } else if (stock.alert_10d !== null && stock.alert_10d !== undefined) {
+                    alert10d = parseFloat(stock.alert_10d).toFixed(2) + '%';
+                    if (stock.pct_9d > 80) {
+                        alert10dColor = '#ff6b35';  // 橙色：接近触发
+                    } else if (stock.pct_9d > 50) {
+                        alert10dColor = '#f39c12';  // 黄色：中等风险
+                    }
+                }
+                
+                // 30日异动阈值
+                let alert30d = '-';
+                let alert30dColor = '#666';
+                if (stock.market !== '主板' && stock.market !== '科创板' && stock.market !== '创业板') {
+                    alert30d = 'N/A';
+                    alert30dColor = '#999';
+                } else if (stock.alert_30d === 'triggered') {
+                    alert30d = '已触发';
+                    alert30dColor = '#dc3545';
+                } else if (stock.alert_30d !== null && stock.alert_30d !== undefined) {
+                    alert30d = parseFloat(stock.alert_30d).toFixed(2) + '%';
+                    if (stock.pct_29d > 150) {
+                        alert30dColor = '#ff6b35';  // 橙色：接近触发
+                    } else if (stock.pct_29d > 100) {
+                        alert30dColor = '#f39c12';  // 黄色：中等风险
+                    }
+                }
+                
+                // 板块类型显示
+                let marketDisplay = stock.market || '-';
+                let marketColor = '#666';
+                let marketBg = '#f8f9fa';
+                if (stock.market === '主板') {
+                    marketColor = '#fff';
+                    marketBg = '#007bff';
+                } else if (stock.market === '科创板') {
+                    marketColor = '#fff';
+                    marketBg = '#dc3545';
+                } else if (stock.market === '创业板') {
+                    marketColor = '#fff';
+                    marketBg = '#28a745';
+                }
+                
+                // 最新价格
+                const latestPrice = stock.latest_price !== null && stock.latest_price !== undefined ? parseFloat(stock.latest_price).toFixed(2) : '-';
+                
                 // 基础概念关联度
                 const baseScore = stock.base_concept_score !== null && stock.base_concept_score !== undefined ? stock.base_concept_score : '-';
                 const baseScoreColor = stock.base_concept_score >= 70 ? '#28a745' : (stock.base_concept_score >= 50 ? '#ffc107' : '#dc3545');
@@ -704,12 +769,16 @@
                         <td>${index + 1}</td>
                         <td><span class="stock-code-link" onclick="window.open('/stock_detail.html?ts_code=${stock.ts_code}', '_blank')">${stock.ts_code}</span></td>
                         <td>${stock.name}</td>
+                        <td><span style="display: inline-block; padding: 4px 10px; border-radius: 4px; background: ${marketBg}; color: ${marketColor}; font-weight: 600; font-size: 12px;">${marketDisplay}</span></td>
+                        <td style="font-weight: 600;">${latestPrice}</td>
                         <td style="color: ${color1d}; font-weight: 600;">${pct1d}${pct1d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color9d}; font-weight: 600;">${pct9d}${pct9d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color10d}; font-weight: 600;">${pct10d}${pct10d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${alert10dColor}; font-weight: 600;">${alert10d}</td>
                         <td style="color: ${color20d}; font-weight: 600;">${pct20d}${pct20d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color29d}; font-weight: 600;">${pct29d}${pct29d !== '-' ? '%' : ''}</td>
                         <td style="color: ${color30d}; font-weight: 600;">${pct30d}${pct30d !== '-' ? '%' : ''}</td>
+                        <td style="color: ${alert30dColor}; font-weight: 600;">${alert30d}</td>
                         ${baseScoreCell}
                         <td class="concepts-cell" onclick="showConceptAnalysis(event, '${stock.ts_code}', '${stock.name}', '${stock.concepts}')" style="cursor: pointer; color: #667eea;">${stock.concepts}</td>
                     </tr>
@@ -736,6 +805,25 @@
                     return sortState.direction === 'asc' 
                         ? valA.localeCompare(valB, 'zh-CN')
                         : valB.localeCompare(valA, 'zh-CN');
+                } else if (column === 'market') {
+                    valA = a.market || '';
+                    valB = b.market || '';
+                    return sortState.direction === 'asc' 
+                        ? valA.localeCompare(valB, 'zh-CN')
+                        : valB.localeCompare(valA, 'zh-CN');
+                } else if (column === 'alert_10d' || column === 'alert_30d') {
+                    // 特殊处理异动阈值排序
+                    valA = a[column];
+                    valB = b[column];
+                    
+                    // 'triggered' 排最前，null 排最后，数字按大小排
+                    if (valA === 'triggered' && valB !== 'triggered') return sortState.direction === 'asc' ? 1 : -1;
+                    if (valA !== 'triggered' && valB === 'triggered') return sortState.direction === 'asc' ? -1 : 1;
+                    if (valA === null && valB !== null) return 1;
+                    if (valA !== null && valB === null) return -1;
+                    if (valA === null && valB === null) return 0;
+                    
+                    return sortState.direction === 'asc' ? valA - valB : valB - valA;
                 } else {
                     valA = a[column] !== null ? a[column] : -Infinity;
                     valB = b[column] !== null ? b[column] : -Infinity;
@@ -749,6 +837,25 @@
             });
             event.target.closest('th').classList.add(sortState.direction);
 
+            renderTable();
+        }
+
+        function filterByConcept(keyword) {
+            if (!keyword || keyword.trim() === '') {
+                currentStocks = allStocks;
+            } else {
+                currentStocks = allStocks.filter(stock => 
+                    stock.concepts && stock.concepts.includes(keyword.trim())
+                );
+            }
+            document.getElementById('totalStocks').textContent = currentStocks.length;
+            renderTable();
+        }
+
+        function clearConceptFilter() {
+            document.getElementById('conceptFilter').value = '';
+            currentStocks = allStocks;
+            document.getElementById('totalStocks').textContent = currentStocks.length;
             renderTable();
         }
 
